@@ -1,4 +1,5 @@
 #include <iostream>
+#include "matrix_storage.hpp"
 #include "parse_command_line.hpp"
 
 
@@ -24,6 +25,9 @@ int main(int argc, char **argv)
       return 0;
    
     parser.print_values ();
+
+    matrix_storage matrix_rhs;
+    matrix_rhs.init_grid(parser);
 
     
 
