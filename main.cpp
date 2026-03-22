@@ -20,14 +20,20 @@ int main(int argc, char **argv)
     parser. template add<bool> ("Eigen", false, "use Eigen for solver");
 
     int ret = 0;
-    ret = parser.parse(argc, argv);
+    ret = parser.parse (argc, argv);
     if (ret < 0)
-      return 0;
+      return ret;
    
     parser.print_values ();
 
     matrix_storage matrix_rhs;
-    matrix_rhs.init_grid(parser);
+    ret = matrix_rhs.init_grid (parser);
+    if (ret < 0)
+      return ret;
+
+    ret = matrix_rhs.set_diff_params (parser);
+    if (ret < 0)
+      return ret;
 
     
 
