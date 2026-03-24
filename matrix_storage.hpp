@@ -152,9 +152,10 @@ public:
 
           switch (border_type)
             {
-              // not border
-              case COND_NO:
+              // inner domain
+              case INNER:
                 {
+                  // equation for G
                   set_diag (4, G, element_i);
                   set_off_diag (-ht / hx * (GVVn (V1, i - 1, j) + GVVn (V1, i, j)), G, i - 1, j, element_i); 
                   set_off_diag (-ht / hy * (GVVn (V2, i, j - 1) + GVVn (V2, i, j)), G, i, j - 1, element_i);
@@ -169,7 +170,7 @@ public:
                   set_rhs (4 * GVVn (G, i, j) + ht * GVVn (G, i, j) * 
                       (1. / hx * (GVVn (V1, i + 1, j) - GVVn (V1, i - 1, j)) + 1. / hy * (GVVn (V2, i, j + 1) - GVVn (V2, i, j - 1))), G, element_i);
 
-
+                  // equation for V1
                   set_diag (6 + 4 * ht * mum * (4 / hx / hx + 3 / hy / hy), V1, element_i);
                   set_off_diag (- (ht / hx * (GVVn (V1, i - 1, j) + GVVn (V1, i, j)) + 8 * ht * mum / hx / hx), V1, i - 1, j, element_i);
                   set_off_diag (-(3 * ht / 2 / hy * (GVVn (V2, i, j - 1) + GVVn (V2 , i, j)) + 6 * ht * mum / hy / hy), V1, i, j - 1, element_i);
@@ -185,6 +186,7 @@ public:
                       ht * mu / 2 / H / hx / hy * (GVVn (V2, i + 1, j + 1) + GVVn (V2, i - 1, j + 1) - GVVn (V2, i + 1, j - 1) + GVVn (V2, i - 1, j - 1)) + 6 * ht * f1 (i * hx, j * hy)
                       , V1, element_i);
 
+                  // equation for V2
                   set_diag (6 + 4 * ht * mum * (3 / hx / hx + 4 / hy / hy), V2, element_i);
                   set_off_diag (-(3 * ht / 2 / hx * (GVVn (V1, i - 1, j) + GVVn (V1, i, j)) + 6 * ht * mum / hx / hx), V2, i - 1, j, element_i);
                   set_off_diag (-(ht / hy * (GVVn (V2, i, j - 1) + GVVn (V2, i, j)) + 8 * ht * mum / hy / hy), V2, i, j - 1, element_i);
@@ -194,20 +196,52 @@ public:
                   set_off_diag (-3 * ht * pd (H, pp) / hy, G, i, j - 1, element_i);
                   set_off_diag (3 * ht * pd (H, pp) / hy, G, i, j + 1, element_i);
 
-                  set_rhs (0, V2, element_i);
-
-
+                  set_rhs (6 * GVVn (V2, i, j) + 3 * ht / 2 / hx * (GVVn (V1, i + 1, j) + GVVn (V1, i - 1, j)) + 6 * ht * (mu / H - mum) * (1 / hx / hx *
+                        (GVVn (V2, i + 1, j) - 2 * GVVn (V2, i, j) + GVVn (V2, i - 1, j)) + 4. / 3 / hy / hy * (GVVn (V2, i, j + 1) - 2 * GVVn (V2, i, j) + GVVn (V2, i, j - 1))) + 
+                      ht * mu / 2 / H / hx / hy * (GVVn (V1, i + 1, j + 1) - GVVn (V1, i - 1, j + 1) - GVVn (V1, i + 1, j - 1) + GVVn (V1, i - 1, j - 1)) + 
+                      6 * ht * f2 (i * hx, j * hy), V2, element_i);
 
                   break;
                 }
-              // zero velocity condition  
-              case COND_U0:
+
+              // left boundary
+              case X_LEFT:
+                {
+                  // equation for G
+                  set_diag (2, G, element_i);
+                  set_off_diag (ht / hx * GVVn (V1, i + 1, j), G, i + 1, j, element_i);
+                  set_off_diag (2 * ht / hx, V1, i + 1, j, element_i);
+
+                  set_rhs (2 * GVVn (G, i, j) + ht / hx * GVVn (G, i, j) * GVVn (V1, i + 1, j) + 2 * ht / hx * (-2.5 * GVVn (G, i + 1, j) * GVVn (V1, i + 1, j) + 
+                        2 * GVVn (G, i + 2, j) * GVVn (V1, i + 2, j)  - 0.5 * GVVn (G, i + 3, j) * GVVn (V1, i + 3, j) + (2 - GVVn (G, i, j)) *
+                        (-2.5 * GVVn (V1, i + 1, j) + 2 * GVVn (V1, i + 2, j) - 0.5 * GVVn (V1, i + 3, j))), G, element_i);
+
+                  // equation for V1
+                  set_diag (1, V1, element_i);
+                  set_rhs (0, V1, element_i);
+
+                  // equation for V2
+                  set_diag (1, V2, element_i);
+                  set_rhs (0, V2, element_i);
+                  break;
+                }
+
+              // right boundary  
+              case X_RIGHT:
+                {
+                  // equation for G
+                  set_diag (2, G, element_i);
+                  set_off_diag (-ht / hx * GVVn (V1, i - 1, j), G, i - 1, j, element_i);
+                  set_off_diag (-2 * ht / hx, V1, i - 1, j, element_i);
+
+                  set_rhs (0, G, element_i);
+                  break;
+                }
+              // down boundary
+              case Y_DOWN:
                 break;
-              // velocity condition  
-              case COND_U:
-                break;
-              // normal derivative condition  
-              case COND_DU:
+              // up boundary  
+              case Y_UP:
                 break;
               default:
                 assert (false);

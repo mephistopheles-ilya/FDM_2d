@@ -3,11 +3,11 @@
 #include <cassert>
 
 
-#define COND_NO 0
-#define COND_U0 1
-#define COND_U 2
-#define COND_DU 3
-
+#define X_LEFT  0
+#define X_RIGHT 1
+#define Y_DOWN  3
+#define Y_UP    4
+#define INNER   5
 
 
 class Grid
@@ -62,16 +62,18 @@ public:
     {
       assert (is_active_node (i, j));
 
-      if (i == 0 && j <= y1)
-        return COND_U;
-      if (j == 0 && i >= x2)
-        return COND_DU;
-      if (i == 0 || i == Nx || j == 0 || j == Ny)
-        return COND_U0;
-      if (j <= y1 && i <= x2 && i >= x1)
-        return COND_U0;
-      return COND_NO;
+      if (i == 0 || (i == x2 && j <= y1))
+        return X_LEFT;
+      if (i == Nx || (i == x1 && j <= y1))
+        return X_RIGHT;
+      if (j == 0)
+        return Y_DOWN;
+      if (j == Ny || (j == y1 && i > x1 && i < x2))
+        return Y_UP; 
+
+      return INNER;
     }
+
   unsigned int convert_ij_to_element_i (unsigned int i, unsigned j)
     {
       assert (is_active_node (i, j));
