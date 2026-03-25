@@ -4,6 +4,8 @@
 #include "parse_command_line.hpp"
 #include "func.hpp"
 #include <cmath>
+#include <vector>
+#include <algorithm>
 
 
 #define G 0
@@ -26,10 +28,17 @@ class matrix_storage
   double pp = 0;
   double mu = 0;
 
-  void set_off_diag (double val, unsigned int variable, unsigned int i, unsigned int j, unsigned int element_i)
+
+  unsigned int get_column_num (unsigned int variable, unsigned int i, unsigned int j)
     {
       unsigned int column = grid.convert_ij_to_element_i (i, j);
       column = column * (variable + 1) + variable;
+      return column;
+    }
+
+  void set_off_diag (double val, unsigned int variable, unsigned int i, unsigned int j, unsigned int element_i)
+    {
+      unsigned int column = get_column_num (variable, i, j);
       element_i = element_i * (variable + 1) + variable;
       unsigned int l = I[element_i + 1] - I[element_i];
       unsigned int J = I[element_i];
@@ -86,6 +95,13 @@ class matrix_storage
       return pp;
     }
 
+  unsigned int count_matrix_size (void)
+    {
+      unsigned int sz = 0;
+      matrix_size = sz;
+      return sz;
+    }
+
 public:
 
   int init_grid (Parser &parser)
@@ -132,8 +148,13 @@ public:
       return 0;
     }
 
+  int solve ()
+    {
+      return 0;
+    }
 
-  unsigned int fill_matrix ()
+
+  unsigned int fill_matrix (unsigned int time_step)
     {
       unsigned int n_elements = grid.get_n_elements ();
       for (unsigned int element_i = 0; element_i < n_elements; element_i++)
@@ -183,7 +204,8 @@ public:
 
                   set_rhs (6 * GVVn (V1, i, j) + 3 * ht / 2 / hy * (GVVn (V2, i, j + 1) + GVVn (V2, i, j - 1)) + 6 * ht * (mu / H - mum) * (4. / 3 / hx / hx * (GVVn (V1, i + 1, j)
                           - 2 * GVVn (V1, i, j) + GVVn (V1, i - 1, j)) + 1 / hy / hy * (GVVn ( V1, i, j + 1) - 2 * GVVn (V1, i, j) + GVVn (V1, i, j - 1))) + 
-                      ht * mu / 2 / H / hx / hy * (GVVn (V2, i + 1, j + 1) + GVVn (V2, i - 1, j + 1) - GVVn (V2, i + 1, j - 1) + GVVn (V2, i - 1, j - 1)) + 6 * ht * f1 (i * hx, j * hy)
+                      ht * mu / 2 / H / hx / hy * (GVVn (V2, i + 1, j + 1) + GVVn (V2, i - 1, j + 1) - GVVn (V2, i + 1, j - 1) + GVVn (V2, i - 1, j - 1)) + 
+                      6 * ht * f1 (time_step * ht, i * hx, j * hy)
                       , V1, element_i);
 
                   // equation for V2
@@ -199,7 +221,7 @@ public:
                   set_rhs (6 * GVVn (V2, i, j) + 3 * ht / 2 / hx * (GVVn (V1, i + 1, j) + GVVn (V1, i - 1, j)) + 6 * ht * (mu / H - mum) * (1 / hx / hx *
                         (GVVn (V2, i + 1, j) - 2 * GVVn (V2, i, j) + GVVn (V2, i - 1, j)) + 4. / 3 / hy / hy * (GVVn (V2, i, j + 1) - 2 * GVVn (V2, i, j) + GVVn (V2, i, j - 1))) + 
                       ht * mu / 2 / H / hx / hy * (GVVn (V1, i + 1, j + 1) - GVVn (V1, i - 1, j + 1) - GVVn (V1, i + 1, j - 1) + GVVn (V1, i - 1, j - 1)) + 
-                      6 * ht * f2 (i * hx, j * hy), V2, element_i);
+                      6 * ht * f2 (time_step * ht, i * hx, j * hy), V2, element_i);
 
                   break;
                 }
@@ -235,14 +257,57 @@ public:
                   set_off_diag (-2 * ht / hx, V1, i - 1, j, element_i);
 
                   set_rhs (0, G, element_i);
+
+                  // equation for V1
+                  set_diag (1, V1, element_i);
+                  set_rhs (0, V1, element_i);
+
+                  //equation for V2
+                  set_diag (1, V1, element_i);
+                  set_rhs (0, V1, element_i);
+
                   break;
                 }
               // down boundary
               case Y_DOWN:
-                break;
+                {
+                  // equation for G
+                  set_diag (2, G, element_i);
+                  set_off_diag (0, G, i, j + 1, element_i);
+                  set_off_diag (0, V2, i, j + 1, element_i);
+
+                  set_rhs (0, G, element_i);
+
+                  //equation for V1
+                  set_diag (1, V1, element_i);
+                  set_rhs (0, V1, element_i);
+
+                  //equation for V2
+                  set_diag (1, V1, element_i);
+                  set_rhs (0, V1, element_i);
+
+                  break;
+                }
               // up boundary  
               case Y_UP:
-                break;
+                {
+                  //equation for G
+                  set_diag (2, G, element_i);
+                  set_off_diag (0, G, i, j - 1, element_i);
+                  set_off_diag (0, V2, i, j - 1, element_i);
+
+                  set_rhs (0, G, element_i);
+
+                  //equation for V1
+                  set_diag (1, V1, element_i);
+                  set_rhs (0, V1, element_i);
+
+                  //equation for V2
+                  set_diag (1, V1, element_i);
+                  set_rhs (0, V1, element_i);
+
+                  break;
+                }
               default:
                 assert (false);
                 break;
@@ -251,10 +316,37 @@ public:
       return 0;
     }
 
-  unsigned int count_matrix_size (void)
+  int allocate (void)
     {
+      return 0;
+    }
+
+  int fill_matrix_pattern (void)
+    {
+      std::vector<unsigned int> columns;
+      columns.reserve (100);
+
       unsigned int n_elements = grid.get_n_elements ();
-      unsigned int sz = 0;
+
+      unsigned int filled = 3 * n_elements;
+      auto set_colums = [this, &columns, &filled]  (unsigned int column)
+      {
+        I[column] = filled;
+        std::sort (columns.begin (), columns.end ());
+        unsigned int prev_col = static_cast <unsigned int> (-1);
+        for (auto col : columns)
+          {
+            // remove dublicates
+            if (col != prev_col)
+              {
+                I[filled] = col;
+                filled++;
+                prev_col = col;
+              }
+          }
+        columns.clear ();
+      };
+
       for (unsigned int element_i = 0; element_i < n_elements; element_i++)
         {
           unsigned int i = 0;
@@ -262,30 +354,24 @@ public:
           grid.convert_element_i_to_ij (element_i, i, j);
           unsigned int border_type = grid.get_bored_type (i, j);
 
+          unsigned int column = 0;
+
           switch (border_type)
             {
-              // not border
-              case COND_NO:
-                sz += 1;
+              case INNER:
+                column = get_column_num (G, i, j);
+                columns.push_back (column);
+                column = get_column_num (G, i + 1, j);
+                columns.push_back (column);
+
+                column = get_column_num (G, i, j);
+                set_colums (column);
+
                 break;
-              // zero velocity condition  
-              case COND_U0:
-                sz += 1;
-                break;
-              // velocity condition  
-              case COND_U:
-                sz += 1;
-                break;
-              // normal derivative condition  
-              case COND_DU:
-                sz += 1;
-                break;
-              default:
-                assert (false);
-                break;
-           }
+            }
+
         }
-      matrix_size = sz;
-      return sz;
+      assert (filled == matrix_size);
+      return 0;
     }
 };

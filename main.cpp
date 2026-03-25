@@ -13,7 +13,7 @@ int main(int argc, char **argv)
     parser. template add<double> ("pp", 1.);
     parser. template add<unsigned int> ("Nx", 100);
     parser. template add<unsigned int> ("Ny", 100);
-    parser. template add<unsigned int> ("Mt", 100);
+    parser. template add<unsigned int> ("Nt", 100);
     parser. template add<unsigned int> ("k", 0, "nested parametr 2^k");
     parser. template add<unsigned int> ("n", 1, "number of threads");
     parser. template add<bool> ("Laspack", false, "use Laspacke for solver");
@@ -35,7 +35,25 @@ int main(int argc, char **argv)
     if (ret < 0)
       return ret;
 
-    
+    ret = matrix_rhs.allocate ();
+    if (ret < 0)
+      return ret;
+
+    ret = matrix_rhs.fill_matrix_pattern ();
+    if (ret < 0)
+      return ret;
+
+    unsigned int Nt = 0;
+    ret = parser.get ("Nt", Nt);
+    if (ret < 0)
+      return ret;
+
+    unsigned int step = 0;
+    for (step = 0; step <= Nt; ++step)
+      {
+        matrix_rhs.fill_matrix (step);
+        matrix_rhs.solve ();
+      }
 
     return 0;
 }

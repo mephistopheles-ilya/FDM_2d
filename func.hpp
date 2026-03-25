@@ -1,15 +1,15 @@
 #pragma once
 
 
-inline double f0 (double x, double y)
+inline double f0 (double t, double x, double y)
   {
-    return x + y;
+    return t + x + y;
   }
-inline double f1 (double x, double y)
+inline double f1 (double t, double x, double y)
   {
-    return x + y;
+    return t + x + y;
   }
-inline double f2 (double x, double y)
+inline double f2 (double t, double x, double y)
   {
-    return x + y;
+    return t + x + y;
   }
