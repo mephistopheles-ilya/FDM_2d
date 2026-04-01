@@ -12,16 +12,19 @@
 #define V1 1
 #define V2 2
 
-static inline double eps = 1e-12;
 
 class matrix_storage
 {
   Grid grid; 
+
   double* matrix = nullptr;
   unsigned int* I = nullptr;
+
+  double* rhs = nullptr;
+
   double* GVV = nullptr;
   double* GVVn_ = nullptr;
-  double* rhs = nullptr;
+
 
   unsigned int matrix_size = 0;
 
@@ -36,7 +39,7 @@ class matrix_storage
       return column;
     }
 
-  void set_off_diag (double val, unsigned int variable, unsigned int i, unsigned int j, unsigned int element_i)
+  void set_off_diag (double val, unsigned int variable, unsigned int i /*shifted node */, unsigned int j /* shifted node */ , unsigned int element_i /* current node */)
     {
       unsigned int column = get_column_num (variable, i, j);
       element_i = element_i * (variable + 1) + variable;
@@ -88,7 +91,7 @@ class matrix_storage
 
   double pd (double H, double pp)
     {
-      if (std::abs (pp - 1.4) < eps)
+      if (std::abs (pp - 1.4) < eps_)
         {
           return pp * std::pow (H, pp - 1);
         }
@@ -112,7 +115,6 @@ public:
         return -1;
       if (parser.get ("Ny", Ny) < 0)
         return -1;
-      grid.set_restrictions (Nx, Ny);
       grid.count_number_of_elements (Nx, Ny);
       grid.check_ij_to_n_elememts_mapping ();
 
@@ -157,6 +159,11 @@ public:
   unsigned int fill_matrix (unsigned int time_step)
     {
       unsigned int n_elements = grid.get_n_elements ();
+      double hx = 0;
+      double hy = 0;
+      double ht = 0;
+      grid.get_h (&hx, &hy, &ht);
+
       for (unsigned int element_i = 0; element_i < n_elements; element_i++)
         {
           unsigned int i = 0;
@@ -164,12 +171,8 @@ public:
           grid.convert_element_i_to_ij (element_i, i, j);
           unsigned int border_type = grid.get_bored_type (i, j);
 
-          double hx = 0;
-          double hy = 0;
-          double ht = 0;
-          grid.get_h (&hx, &hy, &ht);
-
-          double mum = std::exp (- min_G ());
+          double min_g = min_G ();
+          double mum = mu * std::exp (-min_g);
 
           switch (border_type)
             {
@@ -189,7 +192,7 @@ public:
                   set_off_diag (2 * ht / hy, V2, i, j + 1, element_i);
 
                   set_rhs (4 * GVVn (G, i, j) + ht * GVVn (G, i, j) * 
-                      (1. / hx * (GVVn (V1, i + 1, j) - GVVn (V1, i - 1, j)) + 1. / hy * (GVVn (V2, i, j + 1) - GVVn (V2, i, j - 1))), G, element_i);
+                      (1. / hx * (GVVn (V1, i + 1, j) - GVVn (V1, i - 1, j)) + 1. / hy * (GVVn (V2, i, j + 1) - GVVn (V2, i, j - 1))) + 4 * ht * Func_0 (time_step * ht, i * hx, j * hy) , G, element_i);
 
                   // equation for V1
                   set_diag (6 + 4 * ht * mum * (4 / hx / hx + 3 / hy / hy), V1, element_i);
@@ -202,10 +205,10 @@ public:
                   set_off_diag (-3 * ht * pd (H, pp) / hx, G, i - 1, j, element_i);
                   set_off_diag (3 * ht * pd (H, pp) / hx, G, i + 1, j, element_i);
 
-                  set_rhs (6 * GVVn (V1, i, j) + 3 * ht / 2 / hy * (GVVn (V2, i, j + 1) + GVVn (V2, i, j - 1)) + 6 * ht * (mu / H - mum) * (4. / 3 / hx / hx * (GVVn (V1, i + 1, j)
+                  set_rhs (6 * GVVn (V1, i, j) + 3 * ht / 2 / hy * GVVn (V1, i, j) * (GVVn (V2, i, j + 1) + GVVn (V2, i, j - 1)) + 6 * ht * (mu / H - mum) * (4. / 3 / hx / hx * (GVVn (V1, i + 1, j)
                           - 2 * GVVn (V1, i, j) + GVVn (V1, i - 1, j)) + 1 / hy / hy * (GVVn ( V1, i, j + 1) - 2 * GVVn (V1, i, j) + GVVn (V1, i, j - 1))) + 
-                      ht * mu / 2 / H / hx / hy * (GVVn (V2, i + 1, j + 1) + GVVn (V2, i - 1, j + 1) - GVVn (V2, i + 1, j - 1) + GVVn (V2, i - 1, j - 1)) + 
-                      6 * ht * f1 (time_step * ht, i * hx, j * hy)
+                      ht * mu / 2 / H / hx / hy * (GVVn (V2, i + 1, j + 1) - GVVn (V2, i - 1, j + 1) - GVVn (V2, i + 1, j - 1) + GVVn (V2, i - 1, j - 1)) + 
+                      6 * ht * Func_1 (time_step * ht, i * hx, j * hy, pp, mu)
                       , V1, element_i);
 
                   // equation for V2
@@ -218,10 +221,11 @@ public:
                   set_off_diag (-3 * ht * pd (H, pp) / hy, G, i, j - 1, element_i);
                   set_off_diag (3 * ht * pd (H, pp) / hy, G, i, j + 1, element_i);
 
-                  set_rhs (6 * GVVn (V2, i, j) + 3 * ht / 2 / hx * (GVVn (V1, i + 1, j) + GVVn (V1, i - 1, j)) + 6 * ht * (mu / H - mum) * (1 / hx / hx *
+                  set_rhs (6 * GVVn (V2, i, j) + 3 * ht / 2 / hx * GVVn (V2, i, j) * (GVVn (V1, i + 1, j) + GVVn (V1, i - 1, j)) + 6 * ht * (mu / H - mum) * (1 / hx / hx *
                         (GVVn (V2, i + 1, j) - 2 * GVVn (V2, i, j) + GVVn (V2, i - 1, j)) + 4. / 3 / hy / hy * (GVVn (V2, i, j + 1) - 2 * GVVn (V2, i, j) + GVVn (V2, i, j - 1))) + 
                       ht * mu / 2 / H / hx / hy * (GVVn (V1, i + 1, j + 1) - GVVn (V1, i - 1, j + 1) - GVVn (V1, i + 1, j - 1) + GVVn (V1, i - 1, j - 1)) + 
-                      6 * ht * f2 (time_step * ht, i * hx, j * hy), V2, element_i);
+                      6 * ht * Func_2 (time_step * ht, i * hx, j * hy, pp, mu)
+                      , V2, element_i);
 
                   break;
                 }
@@ -230,13 +234,8 @@ public:
               case X_LEFT:
                 {
                   // equation for G
-                  set_diag (2, G, element_i);
-                  set_off_diag (ht / hx * GVVn (V1, i + 1, j), G, i + 1, j, element_i);
-                  set_off_diag (2 * ht / hx, V1, i + 1, j, element_i);
-
-                  set_rhs (2 * GVVn (G, i, j) + ht / hx * GVVn (G, i, j) * GVVn (V1, i + 1, j) + 2 * ht / hx * (-2.5 * GVVn (G, i + 1, j) * GVVn (V1, i + 1, j) + 
-                        2 * GVVn (G, i + 2, j) * GVVn (V1, i + 2, j)  - 0.5 * GVVn (G, i + 3, j) * GVVn (V1, i + 3, j) + (2 - GVVn (G, i, j)) *
-                        (-2.5 * GVVn (V1, i + 1, j) + 2 * GVVn (V1, i + 2, j) - 0.5 * GVVn (V1, i + 3, j))), G, element_i);
+                  set_diag (1, G, element_i);
+                  set_rhs (g (time_step * ht, i * hx, j * hy), G, element_i);
 
                   // equation for V1
                   set_diag (1, V1, element_i);
@@ -252,11 +251,8 @@ public:
               case X_RIGHT:
                 {
                   // equation for G
-                  set_diag (2, G, element_i);
-                  set_off_diag (-ht / hx * GVVn (V1, i - 1, j), G, i - 1, j, element_i);
-                  set_off_diag (-2 * ht / hx, V1, i - 1, j, element_i);
-
-                  set_rhs (0, G, element_i);
+                  set_diag (1, G, element_i);
+                  set_rhs (g (time_step * ht, i * hx, j * hy), G, element_i);
 
                   // equation for V1
                   set_diag (1, V1, element_i);
@@ -272,11 +268,8 @@ public:
               case Y_DOWN:
                 {
                   // equation for G
-                  set_diag (2, G, element_i);
-                  set_off_diag (0, G, i, j + 1, element_i);
-                  set_off_diag (0, V2, i, j + 1, element_i);
-
-                  set_rhs (0, G, element_i);
+                  set_diag (1, G, element_i);
+                  set_rhs (g (time_step * ht, i * hx, j * hy), G, element_i);
 
                   //equation for V1
                   set_diag (1, V1, element_i);
@@ -292,11 +285,8 @@ public:
               case Y_UP:
                 {
                   //equation for G
-                  set_diag (2, G, element_i);
-                  set_off_diag (0, G, i, j - 1, element_i);
-                  set_off_diag (0, V2, i, j - 1, element_i);
-
-                  set_rhs (0, G, element_i);
+                  set_diag (1, G, element_i);
+                  set_rhs ( g (time_step, i * hx, j * hy), G, element_i);
 
                   //equation for V1
                   set_diag (1, V1, element_i);
@@ -307,6 +297,62 @@ public:
                   set_rhs (0, V1, element_i);
 
                   break;
+                }
+              case CORNER_1:
+                {
+                  //equation for G
+                  set_diag (1, G, element_i);
+                  set_rhs ( g (time_step, i * hx, j * hy), G, element_i);
+
+                  //equation for V1
+                  set_diag (1, V1, element_i);
+                  set_rhs (0, V1, element_i);
+
+                  //equation for V2
+                  set_diag (1, V1, element_i);
+                  set_rhs (0, V1, element_i);            
+                }
+              case CORNER_2:
+                {
+                  //equation for G
+                  set_diag (1, G, element_i);
+                  set_rhs ( g (time_step, i * hx, j * hy), G, element_i);
+
+                  //equation for V1
+                  set_diag (1, V1, element_i);
+                  set_rhs (0, V1, element_i);
+
+                  //equation for V2
+                  set_diag (1, V1, element_i);
+                  set_rhs (0, V1, element_i);            
+                }
+              case CORNER_3:
+                {
+                  //equation for G
+                  set_diag (1, G, element_i);
+                  set_rhs ( g (time_step, i * hx, j * hy), G, element_i);
+
+                  //equation for V1
+                  set_diag (1, V1, element_i);
+                  set_rhs (0, V1, element_i);
+
+                  //equation for V2
+                  set_diag (1, V1, element_i);
+                  set_rhs (0, V1, element_i);            
+                }
+              case CORNER_4:
+                {
+                  //equation for G
+                  set_diag (1, G, element_i);
+                  set_rhs ( g (time_step, i * hx, j * hy), G, element_i);
+
+                  //equation for V1
+                  set_diag (1, V1, element_i);
+                  set_rhs (0, V1, element_i);
+
+                  //equation for V2
+                  set_diag (1, V1, element_i);
+                  set_rhs (0, V1, element_i);            
                 }
               default:
                 assert (false);
@@ -336,8 +382,8 @@ public:
         unsigned int prev_col = static_cast <unsigned int> (-1);
         for (auto col : columns)
           {
-            // remove dublicates
-            if (col != prev_col)
+            // remove dublicates && and diagonal
+            if (col != prev_col && col != column)
               {
                 I[filled] = col;
                 filled++;

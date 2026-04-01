@@ -3,18 +3,19 @@
 #include <cassert>
 
 
-#define X_LEFT  0
-#define X_RIGHT 1
-#define Y_DOWN  3
-#define Y_UP    4
-#define INNER   5
+#define X_LEFT   0
+#define X_RIGHT  1
+#define Y_DOWN   3
+#define Y_UP     4
+#define INNER    5
+#define CORNER_1 6
+#define CORNER_2 7
+#define CORNER_3 8
+#define CORNER_4 9
 
 
 class Grid
 {
-  unsigned int y1 = 0;
-  unsigned int x1 = 0;
-  unsigned int x2 = 0;
   unsigned int Nx = 0;
   unsigned int Ny = 0;
   unsigned int n_elements = 0;
@@ -29,12 +30,14 @@ public:
     {
       return n_elements;
     }
+
   void set_h (double hx_, double hy_, double ht_)
     {
       hx = hx_;
       hy = hy_;
       ht = ht_;
     }
+
   void get_h (double *hx_, double *hy_, double *ht_)
     {
       if (hx_)
@@ -44,17 +47,10 @@ public:
       if (ht_)
         *ht_ = ht;
     }
-  void set_restrictions (unsigned int Nx, unsigned int Ny)
-    {
-        y1 = Ny / 2;
-        x1 = Nx / 3;
-        x2 = 2 * Nx / 3;
-    }
+
   bool is_active_node (unsigned int i, unsigned int j)
     {
-      if (i > Nx || j > Ny)
-        return false;
-      if (j < y1 && i < x2 && i > x1)
+      if (i > Nx || j < Ny)
         return false;
       return true;
     }
@@ -62,13 +58,22 @@ public:
     {
       assert (is_active_node (i, j));
 
-      if (i == 0 || (i == x2 && j <= y1))
+      if (i == 0 && j == 0)
+        return CORNER_1;
+      if (i == Nx && j == 0)
+        return CORNER_2;
+      if (i == Nx && j == Ny)
+        return CORNER_3;
+      if (i == 0 && j == Ny)
+        return CORNER_4;
+
+      if (i == 0)
         return X_LEFT;
-      if (i == Nx || (i == x1 && j <= y1))
+      if (i == Nx)
         return X_RIGHT;
       if (j == 0)
         return Y_DOWN;
-      if (j == Ny || (j == y1 && i > x1 && i < x2))
+      if (j == Ny)
         return Y_UP; 
 
       return INNER;
@@ -78,44 +83,16 @@ public:
     {
       assert (is_active_node (i, j));
 
-      if (i <= x1)
-        {
-          return i * (Ny + 1) + j;
-        }
-      if (i < x2)
-        {
-          unsigned int n_elements1 = x1 * (Ny + 1);
-          unsigned int Ny1 = Ny - y1 + 1;
-          j  = j - y1;
-          i = i - x1;
-          return n_elements1 + i * Ny1 + j;
-        }
-      unsigned int Ny1 = Ny - y1 + 1;
-      unsigned int Nx1 = Nx - x1 - (Nx - x2 - 1);
-      unsigned int n_elements1 = x1 * (Ny + 1) + Ny1 * Nx1;
-      i = Nx - (x2 - 1);
-      return n_elements1 + i * (Ny + 1) + j;
+      unsigned int full_column = i = (i == 0 ? 0 : i - 1);
+      unsigned int element_i = full_column * (Nx + 1) + j;
+
+      return element_i;
+
     }
   void convert_element_i_to_ij (unsigned int element_i, unsigned int &i, unsigned int &j)
     {
-      unsigned int n_elements1 = x1 * (Ny + 1);
-      if (element_i <= n_elements1)
-        {
-          j = element_i % (Ny + 1);
-          i = element_i / (Ny + 1);
-        }
-      unsigned int Ny1 = Ny - y1 + 1;
-      unsigned int Nx1 = Nx - x1 - (Nx - x2 - 1);
-      n_elements1 = x1 * (Ny + 1) + Ny1 * Nx1;
-      if (element_i <= n_elements1)
-        {
-          element_i -= x1 * (Ny + 1);
-          j = y1 + element_i % Ny1;
-          i = x1 + element_i / Ny1;
-        }
-      element_i -= n_elements1;
-      j = element_i % (Ny + 1);
-      i = x2 + element_i / (Ny + 1);
+      i = element_i / (Nx + 1);
+      j = element_i % (Nx + 1);
     }
 
   unsigned int count_number_of_elements (unsigned int Nx, unsigned int Ny)
