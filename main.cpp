@@ -55,5 +55,7 @@ int main(int argc, char **argv)
         matrix_rhs.solve ();
       }
 
+    matrix_rhs.deallocate ();
+
     return 0;
 }
