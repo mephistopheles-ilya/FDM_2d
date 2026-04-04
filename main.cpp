@@ -1,10 +1,12 @@
 #include <iostream>
 #include "matrix_storage.hpp"
 #include "parse_command_line.hpp"
-
+#include <fenv.h>
 
 int main(int argc, char **argv)
 {
+    feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW | FE_UNDERFLOW);
+
     Parser parser;
     parser. template add<double> ("hx", 0.1);
     parser. template add<double> ("hy", 0.1);
@@ -36,6 +38,10 @@ int main(int argc, char **argv)
       return ret;
 
     ret = matrix_rhs.allocate ();
+    if (ret < 0)
+      return ret;
+
+    ret = matrix_rhs.init_solver ();
     if (ret < 0)
       return ret;
 

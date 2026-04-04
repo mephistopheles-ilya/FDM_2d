@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstring>
 #include "func.hpp"
+#include "solve.hpp"
 
 
 #define G 0
@@ -18,6 +19,7 @@
 class matrix_storage
 {
   Grid grid; 
+  linear_solver solver;
 
   double* matrix = nullptr;
   unsigned int* I = nullptr;
@@ -150,9 +152,19 @@ public:
       return 0;
     }
 
+  int init_solver ()
+  {
+    unsigned int n_elements = grid.get_n_elements ();
+    int ret;
+    ret = solver.init_solver (3 * n_elements);
+    return ret;
+  }
+
   int solve ()
     {
-      return -1;
+      int ret = 0;
+      ret = solver.solve (matrix, I, rhs, GVV_);
+      return ret;
     }
 
 
