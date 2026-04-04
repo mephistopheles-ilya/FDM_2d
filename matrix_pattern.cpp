@@ -94,7 +94,7 @@ int matrix_storage::fill_matrix_pattern (void)
     unsigned int filled = 3 * n_elements + 1;
     auto finilize_one_row = [this, &one_row, &filled]  (unsigned int variable, unsigned int i, unsigned int j)
     {
-      unsigned int column = get_column_num(variable, i, j);
+      unsigned int column = get_column_num (variable, i, j);
       I[column] = filled;
       std::sort (one_row.begin (), one_row.end ());
       unsigned int prev_col = static_cast <unsigned int> (-1);
@@ -141,7 +141,7 @@ int matrix_storage::fill_matrix_pattern (void)
                 add_column (V1, i + 1, j);
                 add_column (V2, i, j + 1);
 
-                finilize_one_row(G, i, j);
+                finilize_one_row (G, i, j);
 
                 // equation for V1
                 add_column (V1, i - 1, j);
@@ -151,7 +151,7 @@ int matrix_storage::fill_matrix_pattern (void)
                 add_column (G, i - 1, j);
                 add_column (G, i + 1, j);
 
-                finilize_one_row(V1, i, j);
+                finilize_one_row (V1, i, j);
 
                 // equation for V2
                 add_column (V2, i - 1, j);
