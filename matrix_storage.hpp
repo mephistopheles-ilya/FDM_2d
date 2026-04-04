@@ -44,10 +44,10 @@ class matrix_storage
       return column;
     }
 
-  void set_off_diag (double val, unsigned int variable, unsigned int i /*shifted node */, unsigned int j /* shifted node */ , unsigned int element_i /* current node */)
+  void set_off_diag (double val, unsigned int variable, unsigned int i /*shifted node */, unsigned int j /* shifted node */ , unsigned int element_i /* current node */, unsigned int eq)
     {
       unsigned int column = get_column_num (variable, i, j);
-      element_i = element_i * VRAS_NUM + variable;
+      element_i = element_i * VRAS_NUM + eq;
       unsigned int l = I[element_i + 1] - I[element_i];
       unsigned int J = I[element_i];
       unsigned int k = 0;

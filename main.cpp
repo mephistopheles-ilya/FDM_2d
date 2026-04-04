@@ -7,13 +7,13 @@ int main(int argc, char **argv)
     //feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW | FE_UNDERFLOW);
 
     Parser parser;
-    parser. template add<double> ("hx", 0.01);
-    parser. template add<double> ("hy", 0.01);
+    parser. template add<double> ("hx", 0.01 / 2);
+    parser. template add<double> ("hy", 0.01 / 2);
     parser. template add<double> ("ht", 0.01);
     parser. template add<double> ("mu", 0.1);
     parser. template add<double> ("pp", 1.);
-    parser. template add<unsigned int> ("Nx", 100);
-    parser. template add<unsigned int> ("Ny", 100);
+    parser. template add<unsigned int> ("Nx", 100 * 2);
+    parser. template add<unsigned int> ("Ny", 100 * 2);
     parser. template add<unsigned int> ("Nt", 100);
     parser. template add<double> ("eps", 1e-6);
     parser. template add<unsigned int> ("maxit", 2000);

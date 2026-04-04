@@ -63,10 +63,14 @@ class linear_solver
 
   void apply_precond_J (const double *A, double *vec)
   {
+    (void) A;
+    (void) vec;
+#if 0
     for (unsigned int i = 0; i < n; ++i)
       {
         vec[i] /= A[i];
       }
+#endif
   }
 
 
@@ -103,6 +107,7 @@ public:
 
     double rhs_norm = sqrt (dot (b, b));
 
+    double r_norm = 0;
     unsigned int it = 0;
     for (it = 0; it < maxit; ++it)
       {
@@ -123,7 +128,7 @@ public:
         mat_mult_vec (A, I, u, Avec);
         apply_precond_J (A, Avec);
         mult_sub_vec (r, r, alpha, Avec);
-        double r_norm = sqrt (dot (r, r));
+        r_norm = sqrt (dot (r, r));
         if (r_norm < eps * rhs_norm)
           return it;
         double rrz = dot (r, z);
@@ -132,6 +137,7 @@ public:
         mult_sub_vec (Avec, q, -betta, p);
         mult_sub_vec (p, u, -betta, Avec);
       }
+    printf("r_norm = %e\n", r_norm / rhs_norm);
     return maxit;
   }
 

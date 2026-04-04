@@ -25,29 +25,29 @@ unsigned int matrix_storage::fill_matrix (unsigned int time_step)
             {
               // equation for G
               set_diag (4, G, element_i);
-              set_off_diag (-ht / hx * (GVVn (V1, i - 1, j) + GVVn (V1, i, j)), G, i - 1, j, element_i); 
-              set_off_diag (-ht / hy * (GVVn (V2, i, j - 1) + GVVn (V2, i, j)), G, i, j - 1, element_i);
-              set_off_diag (ht / hx  * (GVVn (V1, i + 1, j) + GVVn (V1, i, j)), G, i + 1, j, element_i);
-              set_off_diag (ht / hy  * (GVVn (V2, i, j + 1) + GVVn (V2, i, j)), G, i, j + 1, element_i);
+              set_off_diag (-ht / hx * (GVVn (V1, i - 1, j) + GVVn (V1, i, j)), G, i - 1, j, element_i, G); 
+              set_off_diag (-ht / hy * (GVVn (V2, i, j - 1) + GVVn (V2, i, j)), G, i, j - 1, element_i, G);
+              set_off_diag (ht / hx  * (GVVn (V1, i + 1, j) + GVVn (V1, i, j)), G, i + 1, j, element_i, G);
+              set_off_diag (ht / hy  * (GVVn (V2, i, j + 1) + GVVn (V2, i, j)), G, i, j + 1, element_i, G);
 
-              set_off_diag (-2 * ht / hx, V1, i - 1, j, element_i);
-              set_off_diag (-2 * ht / hy, V2, i, j - 1, element_i);
-              set_off_diag (2 * ht / hx, V1, i + 1, j, element_i);
-              set_off_diag (2 * ht / hy, V2, i, j + 1, element_i);
+              set_off_diag (-2 * ht / hx, V1, i - 1, j, element_i, G);
+              set_off_diag (-2 * ht / hy, V2, i, j - 1, element_i, G);
+              set_off_diag (2 * ht / hx, V1, i + 1, j, element_i, G);
+              set_off_diag (2 * ht / hy, V2, i, j + 1, element_i, G);
 
               set_rhs (4 * GVVn (G, i, j) + ht * GVVn (G, i, j) * 
                   (1. / hx * (GVVn (V1, i + 1, j) - GVVn (V1, i - 1, j)) + 1. / hy * (GVVn (V2, i, j + 1) - GVVn (V2, i, j - 1))) + 4 * ht * Func_0 (time_step * ht, i * hx, j * hy) , G, element_i);
 
               // equation for V1
               set_diag (6 + 4 * ht * mum * (4 / hx / hx + 3 / hy / hy), V1, element_i);
-              set_off_diag (- (ht / hx * (GVVn (V1, i - 1, j) + GVVn (V1, i, j)) + 8 * ht * mum / hx / hx), V1, i - 1, j, element_i);
-              set_off_diag (-(3 * ht / 2 / hy * (GVVn (V2, i, j - 1) + GVVn (V2 , i, j)) + 6 * ht * mum / hy / hy), V1, i, j - 1, element_i);
-              set_off_diag (ht / hx * (GVVn (V1, i + 1, j) + GVVn (V1, i, j)) - 8 * ht * mum / hx / hx, V1, i + 1, j, element_i);
-              set_off_diag (3 * ht / 2 / hy * (GVVn (V2, i, j + 1) + GVVn (V2, i, j)) - 6 * ht * mum / hy / hy, V1, i, j + 1, element_i);
+              set_off_diag (- (ht / hx * (GVVn (V1, i - 1, j) + GVVn (V1, i, j)) + 8 * ht * mum / hx / hx), V1, i - 1, j, element_i, V1);
+              set_off_diag (-(3 * ht / 2 / hy * (GVVn (V2, i, j - 1) + GVVn (V2 , i, j)) + 6 * ht * mum / hy / hy), V1, i, j - 1, element_i, V1);
+              set_off_diag (ht / hx * (GVVn (V1, i + 1, j) + GVVn (V1, i, j)) - 8 * ht * mum / hx / hx, V1, i + 1, j, element_i, V1);
+              set_off_diag (3 * ht / 2 / hy * (GVVn (V2, i, j + 1) + GVVn (V2, i, j)) - 6 * ht * mum / hy / hy, V1, i, j + 1, element_i, V1);
 
               double H = std::exp (GVVn (G, i, j));
-              set_off_diag (-3 * ht * pd (H, pp) / hx, G, i - 1, j, element_i);
-              set_off_diag (3 * ht * pd (H, pp) / hx, G, i + 1, j, element_i);
+              set_off_diag (-3 * ht * pd (H, pp) / hx, G, i - 1, j, element_i, V1);
+              set_off_diag (3 * ht * pd (H, pp) / hx, G, i + 1, j, element_i, V1);
 
               set_rhs (6 * GVVn (V1, i, j) + 3 * ht / 2 / hy * GVVn (V1, i, j) * (GVVn (V2, i, j + 1) - GVVn (V2, i, j - 1)) + 6 * ht * (mu / H - mum) * (4. / 3 / hx / hx * (GVVn (V1, i + 1, j)
                         - 2 * GVVn (V1, i, j) + GVVn (V1, i - 1, j)) + 1 / hy / hy * (GVVn ( V1, i, j + 1) - 2 * GVVn (V1, i, j) + GVVn (V1, i, j - 1))) + 
@@ -57,13 +57,13 @@ unsigned int matrix_storage::fill_matrix (unsigned int time_step)
 
               // equation for V2
               set_diag (6 + 4 * ht * mum * (3 / hx / hx + 4 / hy / hy), V2, element_i);
-              set_off_diag (-(3 * ht / 2 / hx * (GVVn (V1, i - 1, j) + GVVn (V1, i, j)) + 6 * ht * mum / hx / hx), V2, i - 1, j, element_i);
-              set_off_diag (-(ht / hy * (GVVn (V2, i, j - 1) + GVVn (V2, i, j)) + 8 * ht * mum / hy / hy), V2, i, j - 1, element_i);
-              set_off_diag (3 * ht / 2 / hx * (GVVn (V1, i + 1, j) + GVVn (V1, i, j)) - 6 * ht * mum / hx / hx, V2, i + 1, j, element_i);
-              set_off_diag (ht / hy * (GVVn (V2, i, j + 1) + GVVn (V2, i, j)) - 8 * ht * mum / hy / hy, V2, i, j + 1, element_i);
+              set_off_diag (-(3 * ht / 2 / hx * (GVVn (V1, i - 1, j) + GVVn (V1, i, j)) + 6 * ht * mum / hx / hx), V2, i - 1, j, element_i, V2);
+              set_off_diag (-(ht / hy * (GVVn (V2, i, j - 1) + GVVn (V2, i, j)) + 8 * ht * mum / hy / hy), V2, i, j - 1, element_i, V2);
+              set_off_diag (3 * ht / 2 / hx * (GVVn (V1, i + 1, j) + GVVn (V1, i, j)) - 6 * ht * mum / hx / hx, V2, i + 1, j, element_i, V2);
+              set_off_diag (ht / hy * (GVVn (V2, i, j + 1) + GVVn (V2, i, j)) - 8 * ht * mum / hy / hy, V2, i, j + 1, element_i, V2);
 
-              set_off_diag (-3 * ht * pd (H, pp) / hy, G, i, j - 1, element_i);
-              set_off_diag (3 * ht * pd (H, pp) / hy, G, i, j + 1, element_i);
+              set_off_diag (-3 * ht * pd (H, pp) / hy, G, i, j - 1, element_i, V2);
+              set_off_diag (3 * ht * pd (H, pp) / hy, G, i, j + 1, element_i, V2);
 
               set_rhs (6 * GVVn (V2, i, j) + 3 * ht / 2 / hx * GVVn (V2, i, j) * (GVVn (V1, i + 1, j) - GVVn (V1, i - 1, j)) + 6 * ht * (mu / H - mum) * (1 / hx / hx *
                     (GVVn (V2, i + 1, j) - 2 * GVVn (V2, i, j) + GVVn (V2, i - 1, j)) + 4. / 3 / hy / hy * (GVVn (V2, i, j + 1) - 2 * GVVn (V2, i, j) + GVVn (V2, i, j - 1))) + 
