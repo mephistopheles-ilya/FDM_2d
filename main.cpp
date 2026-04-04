@@ -17,7 +17,7 @@ int main(int argc, char **argv)
     parser. template add<unsigned int> ("Ny", 100);
     parser. template add<unsigned int> ("Nt", 100);
     parser. template add<double> ("eps", 1e-3);
-    parser. template add<int> ("maxit", 100);
+    parser. template add<unsigned int> ("maxit", 100);
 
     int ret = 0;
     ret = parser.parse (argc, argv);

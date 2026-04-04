@@ -158,7 +158,7 @@ public:
     double eps = 0;
     if (parser.get ("eps", eps) < 0)
       return -1;
-    int maxit = 0; 
+    unsigned int maxit = 0; 
     if (parser.get ("maxit", maxit) < 0)
       return -1;
     solver.set_parms (eps, maxit);

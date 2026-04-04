@@ -9,7 +9,7 @@ class linear_solver
 {
   unsigned int n = 0;
   double eps = 0;
-  double maxit = 0;
+  unsigned int maxit = 0;
   
   double *z = nullptr;
   double *r = nullptr;
@@ -55,10 +55,19 @@ class linear_solver
   void copy_vec (double *dest, double *source)
   {
     for (unsigned int i = 0; i < n; ++i)
-    {
-      dest[i] = source[i];
-    }
+      {
+        dest[i] = source[i];
+      }
   }
+
+  void apply_precond_J (const double *A, double *vec)
+  {
+    for (unsigned int i = 0; i < n; ++i)
+      {
+        vec[i] /= A[i];
+      }
+  }
+
 
 public:
 
@@ -76,7 +85,7 @@ public:
     return 0;
   }
 
-  void set_parms (double eps_, double maxit_)
+  void set_parms (double eps_, unsigned int maxit_)
   {
     eps = eps_;
     maxit = maxit_;
@@ -86,12 +95,14 @@ public:
   {
     mat_mult_vec (A, I, x, Avec);
     mult_sub_vec (r, b, 1, Avec);
+    apply_precond_J (A, r);
     copy_vec (p, r);
     copy_vec (u, r);
+    copy_vec (z, r);
 
     double rhs_norm = sqrt (dot (b, b));
 
-    int it = 0;
+    unsigned int it = 0;
     for (it = 0; it < maxit; ++it)
       {
         double rz = dot (r, z);
@@ -99,8 +110,9 @@ public:
           return -1;
 
         mat_mult_vec (A, I, p, Avec);
+        apply_precond_J (A, Avec);
         double Apz = dot (Avec, z);
-        if (fabs  (Apz) < min_division)
+        if (fabs (Apz) < min_division)
           return -1;
 
         double alpha = rz / Apz;
@@ -108,6 +120,7 @@ public:
         mult_sub_vec (u, u, -1, q);
         mult_sub_vec (x, x, -alpha, u);
         mat_mult_vec (A, I, u, Avec);
+        apply_precond_J (A, Avec);
         mult_sub_vec (r, r, alpha, Avec);
         double r_norm = sqrt (dot (r, r));
         if (r_norm < eps * rhs_norm)
