@@ -34,7 +34,7 @@ class linear_solver
       }
   }
 
-  double scalar_product (const double *vec1, const double *vec2)
+  double dot (const double *vec1, const double *vec2)
   {
     double s = 0;
     for (unsigned int i = 0; i < n; ++i)
@@ -89,29 +89,30 @@ public:
     copy_vec (p, r);
     copy_vec (u, r);
 
-    double rhs_norm = scalar_product (b, b);
+    double rhs_norm = sqrt (dot (b, b));
 
     int it = 0;
     for (it = 0; it < maxit; ++it)
       {
-        double rz = scalar_product (r, z);
+        double rz = dot (r, z);
         if (fabs (rz) < min_division)
           return -1;
 
         mat_mult_vec (A, I, p, Avec);
-        double Apz = scalar_product(Avec, z);
+        double Apz = dot (Avec, z);
         if (fabs  (Apz) < min_division)
           return -1;
+
         double alpha = rz / Apz;
         mult_sub_vec (q, u, alpha, Avec);
         mult_sub_vec (u, u, -1, q);
         mult_sub_vec (x, x, -alpha, u);
         mat_mult_vec (A, I, u, Avec);
         mult_sub_vec (r, r, alpha, Avec);
-        double r_norm = scalar_product (r, r);
-        if (r_norm < eps * eps * rhs_norm)
+        double r_norm = sqrt (dot (r, r));
+        if (r_norm < eps * rhs_norm)
           return it;
-        double rrz = scalar_product (r, z);
+        double rrz = dot (r, z);
         double betta = rrz / rz;
         mult_sub_vec (u, r, -betta, q);
         mult_sub_vec (Avec, q, -betta, p);

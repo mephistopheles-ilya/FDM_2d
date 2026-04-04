@@ -8,18 +8,16 @@ int main(int argc, char **argv)
     feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW | FE_UNDERFLOW);
 
     Parser parser;
-    parser. template add<double> ("hx", 0.1);
-    parser. template add<double> ("hy", 0.1);
-    parser. template add<double> ("ht", 0.1);
+    parser. template add<double> ("hx", 0.01);
+    parser. template add<double> ("hy", 0.01);
+    parser. template add<double> ("ht", 0.01);
     parser. template add<double> ("mu", 0.1);
     parser. template add<double> ("pp", 1.);
     parser. template add<unsigned int> ("Nx", 100);
     parser. template add<unsigned int> ("Ny", 100);
     parser. template add<unsigned int> ("Nt", 100);
-    parser. template add<unsigned int> ("k", 0, "nested parametr 2^k");
-    parser. template add<unsigned int> ("n", 1, "number of threads");
-    parser. template add<bool> ("Laspack", false, "use Laspacke for solver");
-    parser. template add<bool> ("Eigen", false, "use Eigen for solver");
+    parser. template add<double> ("eps", 1e-3);
+    parser. template add<int> ("maxit", 100);
 
     int ret = 0;
     ret = parser.parse (argc, argv);
@@ -41,7 +39,7 @@ int main(int argc, char **argv)
     if (ret < 0)
       return ret;
 
-    ret = matrix_rhs.init_solver ();
+    ret = matrix_rhs.init_solver (parser);
     if (ret < 0)
       return ret;
 

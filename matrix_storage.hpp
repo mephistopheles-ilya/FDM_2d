@@ -152,9 +152,16 @@ public:
       return 0;
     }
 
-  int init_solver ()
+  int init_solver (Parser &parser)
   {
     unsigned int n_elements = grid.get_n_elements ();
+    double eps = 0;
+    if (parser.get ("eps", eps) < 0)
+      return -1;
+    int maxit = 0; 
+    if (parser.get ("maxit", maxit) < 0)
+      return -1;
+    solver.set_parms (eps, maxit);
     int ret;
     ret = solver.init_solver (3 * n_elements);
     return ret;
