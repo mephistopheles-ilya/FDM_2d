@@ -8,8 +8,8 @@ CXXFLAGS ?=  -O0  -march=native -mfpmath=sse -fstack-protector-all -g -W -Wall -
 			-Woverloaded-virtual -Wnon-virtual-dtor -Wcast-qual -Wno-suggest-attribute=format\
 			#-fsanitize=leak,undefined,address
 
-CSRC = main.cpp
-COBJ = main.o 
+CSRC = main.cpp fill_matrix.cpp matrix_pattern.cpp 
+COBJ = main.o fill_matrix.o matrix_pattern.o 
 
 %.o : %.cpp
 	$(CXX) $(CXXFLAGS) -c $^ -o $@

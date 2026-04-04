@@ -52,10 +52,28 @@ int main(int argc, char **argv)
     for (step = 0; step <= Nt; ++step)
       {
         matrix_rhs.fill_matrix (step);
-        matrix_rhs.solve ();
-      }
+        ret = matrix_rhs.solve ();
+        if (ret < 0)
+          return ret;
+        double C_norm_G = matrix_rhs. template calculate_C_norm <G> (step);
+        double C_norm_V1 = matrix_rhs. template calculate_C_norm <V1> (step);
+        double C_norm_V2 = matrix_rhs. template calculate_C_norm <V2> (step);
 
-    matrix_rhs.deallocate ();
+        double L2_norm_G = matrix_rhs. template calculate_L2_norm <G> (step);
+        double L2_norm_V1 = matrix_rhs. template calculate_L2_norm <V1> (step);
+        double L2_norm_V2 = matrix_rhs. template calculate_L2_norm <V2> (step);
+
+        double W1_norm_G = matrix_rhs. template calculate_W1_norm <G> (step);
+        double W1_norm_V1 = matrix_rhs. template calculate_W1_norm <V1> (step);
+        double W1_norm_V2 = matrix_rhs. template calculate_W1_norm <V2> (step);
+
+        printf ("Time step: %d\n", step);
+        printf("C_nrom: G = %e, V1 = %e, V2 = %e\n", C_norm_G, C_norm_V1, C_norm_V2); 
+        printf("L2_nrom: G = %e, V1 = %e, V2 = %e\n", L2_norm_G, L2_norm_V1, L2_norm_V2); 
+        printf("W1_nrom: G = %e, V1 = %e, V2 = %e\n", W1_norm_G, W1_norm_V1, W1_norm_V2); 
+
+        matrix_rhs.update_prev_solution ();
+      }
 
     return 0;
 }

@@ -50,7 +50,7 @@ public:
 
   bool is_active_node (unsigned int i, unsigned int j)
     {
-      if (i > Nx || j < Ny)
+      if (i > Nx || j > Ny)
         return false;
       return true;
     }
@@ -83,16 +83,16 @@ public:
     {
       assert (is_active_node (i, j));
 
-      unsigned int full_column = i = (i == 0 ? 0 : i - 1);
-      unsigned int element_i = full_column * (Nx + 1) + j;
+      unsigned int full_column = (i == 0 ? 0 : i - 1);
+      unsigned int element_i = full_column * (Ny + 1) + j;
 
       return element_i;
 
     }
   void convert_element_i_to_ij (unsigned int element_i, unsigned int &i, unsigned int &j)
     {
-      i = element_i / (Nx + 1);
-      j = element_i % (Nx + 1);
+      i = element_i / (Ny + 1);
+      j = element_i % (Ny + 1);
     }
 
   unsigned int count_number_of_elements (unsigned int Nx, unsigned int Ny)
@@ -102,7 +102,7 @@ public:
         {
           for (unsigned int j = 0; j <= Ny; ++j)
             {
-              if (is_active_node (i, j))
+              if (is_active_node (i, j) == false)
                 continue;
               counter++;
             }
@@ -118,10 +118,10 @@ public:
         {
           for (unsigned int j = 0; j <= Ny; ++j)
             {
-              if (is_active_node(i, j))
+              if (is_active_node(i, j) == false)
                   continue;
-              unsigned int ij_to_n_element = convert_ij_to_element_i (i, j);
-              assert (ij_to_n_element == counter);
+              unsigned int ij_to_element_i = convert_ij_to_element_i (i, j);
+              assert (ij_to_element_i == counter);
               unsigned int i1 = 0, j1 = 0;
               convert_element_i_to_ij (counter, i1, j1);
               assert (i == i1);
