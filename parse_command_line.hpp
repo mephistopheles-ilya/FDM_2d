@@ -19,10 +19,10 @@ class Parser
 
     std::unordered_map<std::string, val_desc> values_;
 
-    int process_help_notfound(std::string opt)
+    int process_help_notfound (std::string opt)
       {
-        bool is_help = (opt.find("help") != opt.npos);
-        if (is_help || !values_.count(opt))
+        bool is_help = (opt.find ("help") != opt.npos);
+        if (is_help || !values_.count (opt))
           {
             if (!is_help)
                 std::cerr << "ERROR: illegal option detected: " << opt << std::endl;

@@ -101,14 +101,12 @@ int matrix_storage::fill_matrix_pattern (void)
       for (auto col : one_row)
         {
           // must be no diagonal
-          assert (col == column);
-          // remove dublicates
-          if (col != prev_col)
-            {
-              I[filled] = col;
-              filled++;
-              prev_col = col;
-            }
+          assert (col != column);
+          // must be no dublicates
+          assert (col != prev_col);
+          I[filled] = col;
+          filled++;
+          prev_col = col;
         }
       one_row.clear ();
     };
@@ -169,38 +167,62 @@ int matrix_storage::fill_matrix_pattern (void)
             // left boundary
             case X_LEFT:
               {
+                finilize_one_row (G, i, j);
+                finilize_one_row (V1, i, j);
+                finilize_one_row (V2, i, j);
                 break;
               }
 
             // right boundary  
             case X_RIGHT:
               {
+                finilize_one_row (G, i, j);
+                finilize_one_row (V1, i, j);
+                finilize_one_row (V2, i, j);
                 break;
               }
             // down boundary
             case Y_DOWN:
               {
+                finilize_one_row (G, i, j);
+                finilize_one_row (V1, i, j);
+                finilize_one_row (V2, i, j);
                 break;
               }
             // up boundary  
             case Y_UP:
               {
+                finilize_one_row (G, i, j);
+                finilize_one_row (V1, i, j);
+                finilize_one_row (V2, i, j);
                 break;
               }
             case CORNER_1:
               {
+                finilize_one_row (G, i, j);
+                finilize_one_row (V1, i, j);
+                finilize_one_row (V2, i, j);
                 break;
               }
             case CORNER_2:
               {
+                finilize_one_row (G, i, j);
+                finilize_one_row (V1, i, j);
+                finilize_one_row (V2, i, j);
                 break;
               }
             case CORNER_3:
               {
+                finilize_one_row (G, i, j);
+                finilize_one_row (V1, i, j);
+                finilize_one_row (V2, i, j);
                 break;
               }
             case CORNER_4:
               {
+                finilize_one_row (G, i, j);
+                finilize_one_row (V1, i, j);
+                finilize_one_row (V2, i, j);
                 break;
               }
             default:
@@ -209,6 +231,7 @@ int matrix_storage::fill_matrix_pattern (void)
          }
       }
     assert (filled == matrix_size);
+    I[3 * n_elements] = filled;
     return 0;
   }
 

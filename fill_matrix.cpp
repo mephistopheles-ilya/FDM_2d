@@ -1,14 +1,12 @@
 #include "matrix_storage.hpp"
 
-unsigned int matrix_storage::fill_matrix (unsigned int time_step_)
+unsigned int matrix_storage::fill_matrix (unsigned int time_step)
   {
     unsigned int n_elements = grid.get_n_elements ();
     double hx = 0;
     double hy = 0;
     double ht = 0;
     grid.get_h (&hx, &hy, &ht);
-   
-    unsigned int time_step = (time_step_ == 0 ? 0 : time_step_ - 1);
 
     for (unsigned int element_i = 0; element_i < n_elements; element_i++)
       {

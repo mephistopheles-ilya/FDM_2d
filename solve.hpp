@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <stdio.h>
 
 inline double min_division = 1e-32;
 

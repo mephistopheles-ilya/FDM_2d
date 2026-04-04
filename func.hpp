@@ -97,7 +97,7 @@ inline double du1u2_dy (double t, double x, double y)
 inline double dp_drho (double t, double x, double y, double pp)
 {
   if (fabs (pp - 1.4) < eps_)
-    return pow (rho (t, x, y), 0.4);
+    return pp * pow (rho (t, x, y), 0.4);
   return pp;
 }
 
@@ -150,7 +150,7 @@ inline double Func_0 (double t, double x, double y)
 inline double Func_1 (double t, double x, double y, double pp, double mu)
   {
     return du1_dt (t, x, y) + 
-      1./3. * (u1 (y, x, y) * du1_dx (t, x, y) + du1u1_dx (t, x, y)) + 
+      1./3. * (u1 (t, x, y) * du1_dx (t, x, y) + du1u1_dx (t, x, y)) + 
       1./2. * (u2 (t, x, y) * du1_dy (t, x, y) + du1u2_dy (t, x, y) - u1 (t, x, y) * du2_dy (t, x, y)) + 
       dp_drho (t, x, y, pp) * dg_dx (t, x, y) - 
       mu / rho (t, x, y) * (4./3. * ddu1_dxdx (t, x, y) + ddu1_dydy (t, x, y) + 1./3. * ddu2_dxdy (t, x, y));

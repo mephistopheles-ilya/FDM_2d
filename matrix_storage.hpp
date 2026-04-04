@@ -14,6 +14,7 @@
 #define G 0
 #define V1 1
 #define V2 2
+#define VRAS_NUM 3
 
 
 class matrix_storage
@@ -39,14 +40,14 @@ class matrix_storage
   unsigned int get_column_num (unsigned int variable, unsigned int i, unsigned int j)
     {
       unsigned int column = grid.convert_ij_to_element_i (i, j);
-      column = column * (variable + 1) + variable;
+      column = column * VRAS_NUM + variable;
       return column;
     }
 
   void set_off_diag (double val, unsigned int variable, unsigned int i /*shifted node */, unsigned int j /* shifted node */ , unsigned int element_i /* current node */)
     {
       unsigned int column = get_column_num (variable, i, j);
-      element_i = element_i * (variable + 1) + variable;
+      element_i = element_i * VRAS_NUM + variable;
       unsigned int l = I[element_i + 1] - I[element_i];
       unsigned int J = I[element_i];
       unsigned int k = 0;
@@ -63,26 +64,38 @@ class matrix_storage
     }
   void set_diag (double val, unsigned int variable, unsigned int element_i)
     {
-      element_i = element_i * (variable + 1) + variable;
+      element_i = element_i * VRAS_NUM + variable;
       matrix[element_i] = val;
     }
   double GVVn (unsigned int variable, unsigned int i, unsigned int j)
     {
         unsigned int element_i = grid.convert_ij_to_element_i (i, j);
-        element_i = element_i * (variable + 1) + variable;
+        element_i = element_i * VRAS_NUM + variable;
         return GVVn_[element_i];
     }
   double GVV (unsigned int variable, unsigned int i, unsigned int j)
     {
         unsigned int element_i = grid.convert_ij_to_element_i (i, j);
-        element_i = element_i * (variable + 1) + variable;
+        element_i = element_i * VRAS_NUM + variable;
         return GVV_[element_i];
     }
 
   void set_rhs (double val, unsigned int variable, unsigned int element_i)
     {
-        element_i = element_i * (variable + 1) + variable;
+        element_i = element_i * VRAS_NUM + variable;
         rhs[element_i] = val;
+    }
+
+  void set_GVVn (double val, unsigned int variable, unsigned int element_i)
+    {
+        element_i = element_i * VRAS_NUM + variable;
+        GVVn_[element_i] = val;
+    }
+
+  void set_GVV (double val, unsigned int variable, unsigned int element_i)
+    {
+        element_i = element_i * VRAS_NUM + variable;
+        GVV_[element_i] = val;
     }
 
   double min_G ()
@@ -110,11 +123,55 @@ class matrix_storage
 
 public:
 
-  void update_prev_solution (void)
+  void init_solution (void)
   {
-    unsigned int element_i = grid.get_n_elements ();
-    memcpy (GVVn_, GVV_, 3 * element_i * sizeof (double));
+    double hx = 0;
+    double hy = 0;
+    unsigned int n_elements = grid.get_n_elements ();
+    grid.get_h (&hx, &hy, nullptr);
+    unsigned int i = 0;
+    unsigned int j = 0;
+    for (unsigned int element_i = 0; element_i < n_elements; ++element_i)
+      {
+        grid.convert_element_i_to_ij (element_i, i, j);
+        double val = g (0, i * hx, j * hy);
+        set_GVVn (val, G, element_i);
+        set_GVV (val, G, element_i);
+
+        val = u1 (0, i * hx, j * hy);
+        set_GVVn (val, V1, element_i);
+        set_GVV (val, V1, element_i);
+
+        val = u2 (0, i * hx, j * hy);
+        set_GVVn (val, V2, element_i);
+        set_GVV (val, V2, element_i);
+      }
   }
+
+  template <unsigned int variable>
+  void correct (unsigned int time_step)
+  {
+    constexpr double (*func) (double, double , double) = variable == G ? g : variable == V1 ? u1 : u2;
+    double hx = 0;
+    double hy = 0;
+    double ht = 0;
+    unsigned int n_elements = grid.get_n_elements ();
+    grid.get_h (&hx, &hy, &ht);
+    unsigned int i = 0;
+    unsigned int j = 0;
+    for (unsigned int element_i = 0; element_i < n_elements; ++element_i)
+      {
+        grid.convert_element_i_to_ij (element_i, i, j);
+        double val = func (time_step * ht, i * hx, j * hy);
+        set_GVV (val, variable, element_i);
+      }
+  }
+
+  void update_prev_solution (void)
+    {
+      unsigned int element_i = grid.get_n_elements ();
+      memcpy (GVVn_, GVV_, 3 * element_i * sizeof (double));
+    }
 
   int init_grid (Parser &parser)
     {
@@ -124,7 +181,8 @@ public:
         return -1;
       if (parser.get ("Ny", Ny) < 0)
         return -1;
-      grid.count_number_of_elements (Nx, Ny);
+      grid.set_N (Nx, Ny);
+      grid.count_number_of_elements ();
       grid.check_ij_to_n_elememts_mapping ();
 
       double hx = 0;

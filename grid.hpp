@@ -38,6 +38,12 @@ public:
       ht = ht_;
     }
 
+  void set_N (unsigned int Nx_, unsigned int Ny_)
+    {
+      Nx = Nx_;
+      Ny = Ny_;
+    }
+
   void get_h (double *hx_, double *hy_, double *ht_)
     {
       if (hx_)
@@ -82,9 +88,7 @@ public:
   unsigned int convert_ij_to_element_i (unsigned int i, unsigned j)
     {
       assert (is_active_node (i, j));
-
-      unsigned int full_column = (i == 0 ? 0 : i - 1);
-      unsigned int element_i = full_column * (Ny + 1) + j;
+      unsigned int element_i = i * (Ny + 1) + j;
 
       return element_i;
 
@@ -95,7 +99,7 @@ public:
       j = element_i % (Ny + 1);
     }
 
-  unsigned int count_number_of_elements (unsigned int Nx, unsigned int Ny)
+  unsigned int count_number_of_elements ()
     {
       unsigned int counter = 0;
       for (unsigned int i = 0; i <= Nx; ++i)
@@ -126,6 +130,7 @@ public:
               convert_element_i_to_ij (counter, i1, j1);
               assert (i == i1);
               assert (j == j1);
+              counter++;
             }
         }
     }
