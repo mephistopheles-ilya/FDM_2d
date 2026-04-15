@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-static inline double eps_ = 1e-12;
+static inline double eq_eps = 1e-12;
 
 inline double u1 (double t, double x, double y)
 {
@@ -96,8 +96,8 @@ inline double du1u2_dy (double t, double x, double y)
 
 inline double dp_drho (double t, double x, double y, double pp)
 {
-  if (fabs (pp - 1.4) < eps_)
-    return pp * pow (rho (t, x, y), 0.4);
+  if (fabs (pp - 1.4) < eq_eps)
+    return pp * pow (rho (t, x, y), pp - 1);
   return pp;
 }
 

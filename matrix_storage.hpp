@@ -46,11 +46,11 @@ class matrix_storage
 
   void set_off_diag (double val, unsigned int variable, unsigned int i /*shifted node */, unsigned int j /* shifted node */ , unsigned int element_i /* current node */, unsigned int eq)
     {
-      unsigned int column = get_column_num (variable, i, j);
       element_i = element_i * VRAS_NUM + eq;
       unsigned int l = I[element_i + 1] - I[element_i];
       unsigned int J = I[element_i];
       unsigned int k = 0;
+      unsigned int column = get_column_num (variable, i, j);
       for (k = 0; k < l; ++k)
         {
           if (column == I[J + k])
@@ -114,7 +114,7 @@ class matrix_storage
 
   double pd (double H, double pp)
     {
-      if (std::abs (pp - 1.4) < eps_)
+      if (std::abs (pp - 1.4) < eq_eps)
         {
           return pp * std::pow (H, pp - 1);
         }
@@ -169,8 +169,8 @@ public:
 
   void update_prev_solution (void)
     {
-      unsigned int element_i = grid.get_n_elements ();
-      memcpy (GVVn_, GVV_, 3 * element_i * sizeof (double));
+      unsigned int n_elements = grid.get_n_elements ();
+      memcpy (GVVn_, GVV_, 3 * n_elements * sizeof (double));
     }
 
   int init_grid (Parser &parser)
@@ -285,7 +285,15 @@ public:
         double calc_val = GVV (variable, i, j);
         double real_val = func (time_step * ht, i * hx, j * hy);
         double diff = calc_val - real_val;
-        diff *= diff;
+        unsigned int border_type = grid.get_bored_type (i, j);
+        if  (border_type == INNER)
+          {
+            diff *= diff;
+          }
+        else
+          {
+            diff *= diff * 0.5;
+          }
         L2_norm += diff;
       }
     return sqrt (L2_norm * hx * hy);
@@ -294,7 +302,38 @@ public:
   template <unsigned int variable>
   double calculate_W1_norm (unsigned int time_step)
   {
-    return time_step;
+    constexpr double (*func) (double, double , double) = variable == G ? g : variable == V1 ? u1 : u2;
+    unsigned int n_elements = grid.get_n_elements ();
+    unsigned int  i = 0;
+    unsigned int j = 0;
+    double W1_norm_x = 0;
+    double W1_norm_y = 0;
+    double hx = 0, hy = 0, ht = 0;
+    grid.get_h (&hx, &hy, &ht);
+    for (unsigned int element_i = 0; element_i < n_elements; ++element_i)
+      {
+        grid.convert_element_i_to_ij (element_i, i, j);
+        double calc_val = GVV (variable, i, j);
+        double real_val = func (time_step * ht, i * hx, j * hy);
+        double diff = calc_val - real_val;
+        if (grid.is_active_node (i + 1, j))
+          {
+            double forward_calc_val = GVV (variable, i + 1, j);
+            double forward_real_val = func (time_step * ht, (i + 1) * hx, j * hy);
+            double forward_diff = forward_calc_val - forward_real_val;
+            double forward_der = (forward_diff - diff) / hx;
+            W1_norm_x += forward_der * forward_der;
+          }
+        if (grid.is_active_node (i, j + 1))
+          {
+            double forward_calc_val = GVV (variable, i, j + 1);
+            double forward_real_val = func (time_step * ht, i * hx, (j + 1) * hy);
+            double forward_diff = forward_calc_val - forward_real_val;
+            double forward_der = (forward_diff - diff) / hy;
+            W1_norm_y += forward_der * forward_der;
+          }
+      }
+    return sqrt ((W1_norm_x + W1_norm_y) * hx * hy);
   }
 
 };

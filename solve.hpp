@@ -20,7 +20,7 @@ class linear_solver
   double *Avec = nullptr;
 
 
-  void mat_mult_vec (const double *A, const unsigned int *I,  double *vec, double *res)
+  void mat_mult_vec (const double *A, const unsigned int *I,  const double *vec, double *res)
   {
     for(unsigned int i = 0; i < n; ++i)
       {
@@ -53,7 +53,7 @@ class linear_solver
       }
   }
 
-  void copy_vec (double *dest, double *source)
+  void copy_vec (double *dest, const double *source)
   {
     for (unsigned int i = 0; i < n; ++i)
       {

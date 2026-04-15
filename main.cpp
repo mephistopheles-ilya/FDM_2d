@@ -8,14 +8,18 @@ int main(int argc, char **argv)
 
     Parser parser;
     parser. template add<double> ("hx", 0.01 / 2);
+    parser. template add<unsigned int> ("Nx", 100 * 2);
+
     parser. template add<double> ("hy", 0.01 / 2);
-    parser. template add<double> ("ht", 0.01);
+    parser. template add<unsigned int> ("Ny", 100 * 2);
+
+    parser. template add<double> ("ht", 0.01 / 4);
+    parser. template add<unsigned int> ("Nt", 100 * 4);
+
     parser. template add<double> ("mu", 0.1);
     parser. template add<double> ("pp", 1.);
-    parser. template add<unsigned int> ("Nx", 100 * 2);
-    parser. template add<unsigned int> ("Ny", 100 * 2);
-    parser. template add<unsigned int> ("Nt", 100);
-    parser. template add<double> ("eps", 1e-6);
+
+    parser. template add<double> ("eps", 1e-8);
     parser. template add<unsigned int> ("maxit", 2000);
 
     int ret = 0;
@@ -65,8 +69,6 @@ int main(int argc, char **argv)
             std::cout << "ERROR: solver cannot solve " << ret << std::endl;
             return ret;
           }
-        //matrix_rhs. template correct <V1> (step);
-        //matrix_rhs. template correct <G> (step);
         double C_norm_G = matrix_rhs. template calculate_C_norm <G> (step);
         double C_norm_V1 = matrix_rhs. template calculate_C_norm <V1> (step);
         double C_norm_V2 = matrix_rhs. template calculate_C_norm <V2> (step);

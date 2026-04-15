@@ -105,14 +105,14 @@ public:
           bool have_val = (trim_pos != opt_view.npos);
           std::string_view val_view = opt_view;
           if (have_val)
-            opt_view.remove_suffix(opt_view.size () - trim_pos);
+            opt_view.remove_suffix (opt_view.size () - trim_pos);
           std::string opt{opt_view};
-          res = process_help_notfound(opt);
+          res = process_help_notfound (opt);
           if  (res < 0)
             return res;
           if (have_val)
             {
-              val_view.remove_prefix(trim_pos + 1);
+              val_view.remove_prefix (trim_pos + 1);
               values_[opt].value = val_view;
             }
         }
