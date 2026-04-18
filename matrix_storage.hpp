@@ -10,11 +10,17 @@
 #include "func.hpp"
 #include "solve.hpp"
 
+#include <Eigen/Sparse>
+#include <Eigen/IterativeLinearSolvers>
+
 
 #define G 0
 #define V1 1
 #define V2 2
 #define VRAS_NUM 3
+
+#define solver_own 0
+#define solver_eigen 1
 
 
 class matrix_storage
@@ -36,6 +42,14 @@ class matrix_storage
   double pp = 0;
   double mu = 0;
 
+  Eigen::SparseMatrix<double, Eigen::RowMajor> eigen_A;
+  Eigen::BiCGSTAB<Eigen::SparseMatrix<double, Eigen::RowMajor>, Eigen::IdentityPreconditioner> eigen_solver;
+  //Eigen::BiCGSTAB<Eigen::SparseMatrix<double, Eigen::RowMajor>, Eigen::DiagonalPreconditioner<double>> eigen_solver;
+  //Eigen::BiCGSTAB<Eigen::SparseMatrix<double, Eigen::RowMajor>, Eigen::IncompleteLUT<double>> eigen_solver;
+  double *A_values = nullptr;    
+  int *A_inner_indices = nullptr;
+  int *A_outer_starts = nullptr; 
+
 
   unsigned int get_column_num (unsigned int variable, unsigned int i, unsigned int j)
     {
@@ -44,28 +58,71 @@ class matrix_storage
       return column;
     }
 
+  template <unsigned int solver_type>
   void set_off_diag (double val, unsigned int variable, unsigned int i /*shifted node */, unsigned int j /* shifted node */ , unsigned int element_i /* current node */, unsigned int eq)
     {
-      element_i = element_i * VRAS_NUM + eq;
-      unsigned int l = I[element_i + 1] - I[element_i];
-      unsigned int J = I[element_i];
-      unsigned int k = 0;
-      unsigned int column = get_column_num (variable, i, j);
-      for (k = 0; k < l; ++k)
+      if constexpr (solver_type == solver_own)
         {
-          if (column == I[J + k])
+          element_i = element_i * VRAS_NUM + eq;
+          unsigned int l = I[element_i + 1] - I[element_i];
+          unsigned int J = I[element_i];
+          unsigned int k = 0;
+          unsigned int column = get_column_num (variable, i, j);
+          for (k = 0; k < l; ++k)
             {
-              break;
+              if (column == I[J + k])
+                {
+                  break;
+                }
             }
+          if (k == l)
+            assert (false);
+          matrix[J + k] = val;
         }
-      if (k == l)
-        assert (false);
-      matrix[J + k] = val;
+      if constexpr (solver_type == solver_eigen)
+        {
+          unsigned int row = element_i * VRAS_NUM + eq;
+          unsigned int col = get_column_num (variable, i, j);
+          unsigned int idx = static_cast <unsigned int> (A_outer_starts[row]);
+          unsigned int idx_end = static_cast <unsigned int> (A_outer_starts[row + 1]);
+          for (; idx < idx_end; ++idx)
+            {
+              if (A_inner_indices[idx] == static_cast<int> (col))
+                {
+                  break;
+                }
+            }
+          if (idx == idx_end)
+            assert (false);
+          A_values[idx] = val;
+        }
     }
+  template <unsigned int solver_type>
   void set_diag (double val, unsigned int variable, unsigned int element_i)
     {
-      element_i = element_i * VRAS_NUM + variable;
-      matrix[element_i] = val;
+      if constexpr (solver_type == solver_own)
+        {
+          element_i = element_i * VRAS_NUM + variable;
+          matrix[element_i] = val;
+        }
+      if constexpr (solver_type == solver_eigen)
+        {
+          unsigned int row = element_i * VRAS_NUM + variable;
+          unsigned int col = row;
+          unsigned int idx = static_cast <unsigned int> (A_outer_starts[row]);
+          unsigned int idx_end = static_cast <unsigned int> (A_outer_starts[row + 1]);
+          for (; idx < idx_end; ++idx)
+            {
+              if (A_inner_indices[idx] == static_cast<int> (col))
+                {
+                  break;
+                }
+            }
+          if (idx == idx_end)
+            assert (false);
+          A_values[idx] = val;
+
+        }
     }
   double GVVn (unsigned int variable, unsigned int i, unsigned int j)
     {
@@ -121,7 +178,35 @@ class matrix_storage
       return pp;
     }
 
+  void init_eigen_from_msr ()
+  {
+    unsigned int n_elements = grid.get_n_elements ();
+    std::vector<Eigen::Triplet<double>> triplets;
+    triplets.reserve (matrix_size - n_elements);
+
+    for(unsigned int i = 0; i < 3 * n_elements; ++i)
+      {
+          unsigned int row = i;
+          triplets.emplace_back (row, row, 0.0);
+          unsigned int l = I[i + 1] - I[i];
+          unsigned int J = I[i];
+          for(unsigned int j = 0; j < l; ++j)
+            {
+              unsigned int col = I[J + j];
+              triplets.emplace_back (row, col, 0.0);
+            }
+      }
+    eigen_A.resize (3 * n_elements, 3 * n_elements);
+    eigen_A.setFromTriplets (triplets.begin(), triplets.end());
+    eigen_A.makeCompressed ();
+
+    A_values = eigen_A.valuePtr ();
+    A_inner_indices = eigen_A.innerIndexPtr ();
+    A_outer_starts = eigen_A.outerIndexPtr ();
+  }
 public:
+
+
 
   void init_solution (void)
   {
@@ -219,23 +304,61 @@ public:
     unsigned int maxit = 0; 
     if (parser.get ("maxit", maxit) < 0)
       return -1;
-    solver.set_parms (eps, maxit);
-    int ret;
-    ret = solver.init_solver (3 * n_elements);
-    return ret;
+    unsigned int solver_type = 0;
+    if (parser.get ("solver", solver_type) < 0)
+      return -1;
+    if (solver_type == solver_own)
+      {
+        solver.set_parms (eps, maxit);
+        int ret;
+        ret = solver.init_solver (3 * n_elements);
+        return ret;
+      }
+    if (solver_type == solver_eigen)
+      {
+        init_eigen_from_msr ();
+        eigen_solver.setTolerance (eps);
+        eigen_solver.setMaxIterations (maxit);
+      }
+    return 0;
   }
 
-  int solve ()
+  int solve (unsigned int solver_type)
     {
       int ret = 0;
-      ret = solver.solve (matrix, I, rhs, GVV_);
+      if (solver_type == solver_own)
+        {
+          ret = solver.solve (matrix, I, rhs, GVV_);
+          return ret;
+        }
+      else
+        {
+          eigen_solver.compute (eigen_A);
+          if (eigen_solver.info () != Eigen::Success)
+            {
+              return -1;
+            }
+          unsigned int n_elements = grid.get_n_elements ();
+          Eigen::Map<Eigen::VectorXd> solution_map (GVV_, 3 * n_elements);
+          solution_map = eigen_solver.solve (Eigen::Map<Eigen::VectorXd> (rhs, 3 * n_elements));
+          if (eigen_solver.info() != Eigen::Success)
+            {
+              std::cerr << "ERROR: Compute failed!" << std::endl;
+              std::cerr << "Reason: " << eigen_solver.info () << std::endl;
+              std::cerr << "Last error estimate: " << eigen_solver.error() << std::endl;
+              std::cerr << "IT = " << eigen_solver.iterations ();
+              return -1;
+            }
+          return eigen_solver.iterations ();
+       }
       return ret;
     }
 
 
+  template <unsigned int solver_type>
   unsigned int fill_matrix (unsigned int time_step);
 
-  int allocate (void);
+  int allocate (unsigned int solver_type);
 
   int fill_matrix_pattern (void);
 

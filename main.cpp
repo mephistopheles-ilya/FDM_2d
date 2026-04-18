@@ -2,6 +2,8 @@
 #include "parse_command_line.hpp"
 //#include <fenv.h>
 
+
+
 int main(int argc, char **argv)
 {
     //feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW | FE_UNDERFLOW);
@@ -22,6 +24,8 @@ int main(int argc, char **argv)
     parser. template add<double> ("eps", 1e-8);
     parser. template add<unsigned int> ("maxit", 2000);
 
+    parser. template add<unsigned int> ("solver", 0);
+
     int ret = 0;
     ret = parser.parse (argc, argv);
     if (ret < 0)
@@ -38,11 +42,11 @@ int main(int argc, char **argv)
     if (ret < 0)
       return ret;
 
-    ret = matrix_rhs.allocate ();
+    unsigned int solver_type = 0;
+    ret = parser.get ("solver", solver_type);
     if (ret < 0)
       return ret;
-
-    ret = matrix_rhs.init_solver (parser);
+    ret = matrix_rhs.allocate (solver_type);
     if (ret < 0)
       return ret;
 
@@ -50,25 +54,38 @@ int main(int argc, char **argv)
     if (ret < 0)
       return ret;
 
+    ret = matrix_rhs.init_solver (parser);
+    if (ret < 0)
+      return ret;
+
     unsigned int Nt = 0;
     ret = parser.get ("Nt", Nt);
     if (ret < 0)
       return ret;
-
     matrix_rhs.init_solution ();
 
     unsigned int step = 0;
     unsigned int maxit = 0;
     parser.get ("maxit", maxit);
+    clock_t start, end;
+    start = clock();
     for (step = 0; step <= Nt; ++step)
       {
-        matrix_rhs.fill_matrix (step);
-        ret = matrix_rhs.solve ();
+        if (solver_type == solver_own)
+          {
+            matrix_rhs.fill_matrix<solver_own> (step);
+          }
+        else
+          {
+            matrix_rhs.fill_matrix<solver_eigen> (step);
+          }
+        ret = matrix_rhs.solve (solver_type);
         if (ret < 0 || ret == static_cast <int> (maxit))
           {
             std::cout << "ERROR: solver cannot solve " << ret << std::endl;
             return ret;
           }
+#if 0
         double C_norm_G = matrix_rhs. template calculate_C_norm <G> (step);
         double C_norm_V1 = matrix_rhs. template calculate_C_norm <V1> (step);
         double C_norm_V2 = matrix_rhs. template calculate_C_norm <V2> (step);
@@ -85,9 +102,27 @@ int main(int argc, char **argv)
         printf("C_nrom: G = %e, V1 = %e, V2 = %e\n", C_norm_G, C_norm_V1, C_norm_V2); 
         printf("L2_nrom: G = %e, V1 = %e, V2 = %e\n", L2_norm_G, L2_norm_V1, L2_norm_V2); 
         printf("W1_nrom: G = %e, V1 = %e, V2 = %e\n", W1_norm_G, W1_norm_V1, W1_norm_V2); 
-
+#endif
         matrix_rhs.update_prev_solution ();
       }
+    end = clock();
+    double time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+    double C_norm_G = matrix_rhs. template calculate_C_norm <G> (step);
+    double C_norm_V1 = matrix_rhs. template calculate_C_norm <V1> (step);
+    double C_norm_V2 = matrix_rhs. template calculate_C_norm <V2> (step);
+
+    double L2_norm_G = matrix_rhs. template calculate_L2_norm <G> (step);
+    double L2_norm_V1 = matrix_rhs. template calculate_L2_norm <V1> (step);
+    double L2_norm_V2 = matrix_rhs. template calculate_L2_norm <V2> (step);
+
+    double W1_norm_G = matrix_rhs. template calculate_W1_norm <G> (step);
+    double W1_norm_V1 = matrix_rhs. template calculate_W1_norm <V1> (step);
+    double W1_norm_V2 = matrix_rhs. template calculate_W1_norm <V2> (step);
+
+    printf ("Elapsed: %lf\n", time_used);
+    printf("C_nrom: G = %e, V1 = %e, V2 = %e\n", C_norm_G, C_norm_V1, C_norm_V2); 
+    printf("L2_nrom: G = %e, V1 = %e, V2 = %e\n", L2_norm_G, L2_norm_V1, L2_norm_V2); 
+    printf("W1_nrom: G = %e, V1 = %e, V2 = %e\n", W1_norm_G, W1_norm_V1, W1_norm_V2); 
 
     return 0;
 }

@@ -1,6 +1,6 @@
 #include "matrix_storage.hpp"
 
-int matrix_storage::allocate (void)
+int matrix_storage::allocate (unsigned int solver_type)
   {
     unsigned int n_elements = grid.get_n_elements ();
     unsigned int sz = 3 * n_elements + 1;
@@ -71,13 +71,14 @@ int matrix_storage::allocate (void)
       }
     matrix_size = sz;
 
-    matrix = new double [matrix_size];
+    if (solver_type == solver_own)
+      matrix = new double [matrix_size];
     I = new unsigned int [matrix_size];
     rhs = new double [3 * n_elements];
 
     GVV_ = new double [3 * n_elements];
     GVVn_ = new double [3 * n_elements];
-    if (matrix == nullptr || I == nullptr || rhs == nullptr || GVV_ == nullptr || GVVn_ == nullptr)
+    if (I == nullptr || rhs == nullptr || GVV_ == nullptr || GVVn_ == nullptr)
       {
         return -1;
       }
