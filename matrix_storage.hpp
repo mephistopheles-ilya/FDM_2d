@@ -50,6 +50,9 @@ class matrix_storage
   int *A_inner_indices = nullptr;
   int *A_outer_starts = nullptr; 
 
+  unsigned int solver_type = 0;
+  unsigned int Nt = 0;
+  unsigned int maxit = 0;
 
   unsigned int get_column_num (unsigned int variable, unsigned int i, unsigned int j)
     {
@@ -204,96 +207,10 @@ class matrix_storage
     A_inner_indices = eigen_A.innerIndexPtr ();
     A_outer_starts = eigen_A.outerIndexPtr ();
   }
-public:
 
+  int allocate (unsigned int solver_type);
 
-
-  void init_solution (void)
-  {
-    double hx = 0;
-    double hy = 0;
-    unsigned int n_elements = grid.get_n_elements ();
-    grid.get_h (&hx, &hy, nullptr);
-    unsigned int i = 0;
-    unsigned int j = 0;
-    for (unsigned int element_i = 0; element_i < n_elements; ++element_i)
-      {
-        grid.convert_element_i_to_ij (element_i, i, j);
-        double val = g (0, i * hx, j * hy);
-        set_GVVn (val, G, element_i);
-        set_GVV (val, G, element_i);
-
-        val = u1 (0, i * hx, j * hy);
-        set_GVVn (val, V1, element_i);
-        set_GVV (val, V1, element_i);
-
-        val = u2 (0, i * hx, j * hy);
-        set_GVVn (val, V2, element_i);
-        set_GVV (val, V2, element_i);
-      }
-  }
-
-  template <unsigned int variable>
-  void correct (unsigned int time_step)
-  {
-    constexpr double (*func) (double, double , double) = variable == G ? g : variable == V1 ? u1 : u2;
-    double hx = 0;
-    double hy = 0;
-    double ht = 0;
-    unsigned int n_elements = grid.get_n_elements ();
-    grid.get_h (&hx, &hy, &ht);
-    unsigned int i = 0;
-    unsigned int j = 0;
-    for (unsigned int element_i = 0; element_i < n_elements; ++element_i)
-      {
-        grid.convert_element_i_to_ij (element_i, i, j);
-        double val = func (time_step * ht, i * hx, j * hy);
-        set_GVV (val, variable, element_i);
-      }
-  }
-
-  void update_prev_solution (void)
-    {
-      unsigned int n_elements = grid.get_n_elements ();
-      memcpy (GVVn_, GVV_, 3 * n_elements * sizeof (double));
-    }
-
-  int init_grid (Parser &parser)
-    {
-      unsigned int Nx = 0;
-      unsigned int Ny = 0;
-      if (parser.get ("Nx", Nx) < 0)
-        return -1;
-      if (parser.get ("Ny", Ny) < 0)
-        return -1;
-      grid.set_N (Nx, Ny);
-      grid.count_number_of_elements ();
-      grid.check_ij_to_n_elememts_mapping ();
-
-      double hx = 0;
-      if (parser.get ("hx", hx) < 0)
-        return -1;
-      double hy = 0;
-      if (parser.get ("hy", hy) < 0)
-        return -1;
-      double ht = 0;
-      if (parser.get ("ht", ht) < 0)
-        return -1;
-      grid.set_h (hx, hy, ht);
-
-      return 0;
-    }
-
-  int set_diff_params (Parser &parser)
-    {
-      pp = 0;
-      if (parser.get ("pp", pp) < 0)
-        return -1;
-      mu = 0;
-      if (parser.get ("mu", mu) < 0)
-        return -1;
-      return 0;
-    }
+  void fill_matrix_pattern (void);
 
   int init_solver (Parser &parser)
   {
@@ -322,6 +239,37 @@ public:
       }
     return 0;
   }
+
+  void init_solution (void)
+  {
+    double hx = 0;
+    double hy = 0;
+    unsigned int n_elements = grid.get_n_elements ();
+    grid.get_h (&hx, &hy, nullptr);
+    unsigned int i = 0;
+    unsigned int j = 0;
+    for (unsigned int element_i = 0; element_i < n_elements; ++element_i)
+      {
+        grid.convert_element_i_to_ij (element_i, i, j);
+        double val = g (0, i * hx, j * hy);
+        set_GVVn (val, G, element_i);
+        set_GVV (val, G, element_i);
+
+        val = u1 (0, i * hx, j * hy);
+        set_GVVn (val, V1, element_i);
+        set_GVV (val, V1, element_i);
+
+        val = u2 (0, i * hx, j * hy);
+        set_GVVn (val, V2, element_i);
+        set_GVV (val, V2, element_i);
+      }
+  }
+
+  void update_prev_solution (void)
+    {
+      unsigned int n_elements = grid.get_n_elements ();
+      memcpy (GVVn_, GVV_, 3 * n_elements * sizeof (double));
+    }
 
   int solve (unsigned int solver_type)
     {
@@ -358,23 +306,28 @@ public:
   template <unsigned int solver_type>
   unsigned int fill_matrix (unsigned int time_step);
 
-  int allocate (unsigned int solver_type);
-
-  int fill_matrix_pattern (void);
-
-  ~matrix_storage (void)
-    {
-      delete[] matrix;
-      delete[] I;
-      delete[] rhs;
-      delete[] GVV_;
-      delete[] GVVn_;
-    }
-
   template <unsigned int variable>
-  double calculate_C_norm (unsigned int time_step)
+  double calculate_C_norm (unsigned int time_step, matrix_storage *other, unsigned int k)
   {
-    constexpr double (*func) (double, double , double) = variable == G ? g : variable == V1 ? u1 : u2;
+    if (k < 2)
+      {
+        constexpr double (*func) (double, double , double) = variable == G ? g : variable == V1 ? u1 : u2;
+        unsigned int n_elements = grid.get_n_elements ();
+        unsigned int  i = 0;
+        unsigned int j = 0;
+        double C_norm = 0;
+        double hx = 0, hy = 0, ht = 0;
+        grid.get_h (&hx, &hy, &ht);
+        for (unsigned int element_i = 0; element_i < n_elements; ++element_i)
+          {
+            grid.convert_element_i_to_ij (element_i, i, j);
+            double calc_val = GVV (variable, i, j);
+            double real_val = func (time_step * ht, i * hx, j * hy);
+            double diff_abs = fabs (calc_val - real_val);
+            C_norm = std::max (C_norm, diff_abs);
+          }
+        return C_norm;
+      }
     unsigned int n_elements = grid.get_n_elements ();
     unsigned int  i = 0;
     unsigned int j = 0;
@@ -385,17 +338,47 @@ public:
       {
         grid.convert_element_i_to_ij (element_i, i, j);
         double calc_val = GVV (variable, i, j);
-        double real_val = func (time_step * ht, i * hx, j * hy);
-        double diff_abs = fabs (calc_val - real_val);
+        double other_val = other->GVV (variable, k * i, k * j);
+        double diff_abs = fabs (calc_val - other_val);
         C_norm = std::max (C_norm, diff_abs);
       }
     return C_norm;
+
+
+
   }
 
   template <unsigned int variable>
-  double calculate_L2_norm (unsigned int time_step)
+  double calculate_L2_norm (unsigned int time_step, matrix_storage *other, unsigned int k)
   {
-    constexpr double (*func) (double, double , double) = variable == G ? g : variable == V1 ? u1 : u2;
+    if (k < 2)
+      {
+        constexpr double (*func) (double, double , double) = variable == G ? g : variable == V1 ? u1 : u2;
+        unsigned int n_elements = grid.get_n_elements ();
+        unsigned int  i = 0;
+        unsigned int j = 0;
+        double L2_norm = 0;
+        double hx = 0, hy = 0, ht = 0;
+        grid.get_h (&hx, &hy, &ht);
+        for (unsigned int element_i = 0; element_i < n_elements; ++element_i)
+          {
+            grid.convert_element_i_to_ij (element_i, i, j);
+            double calc_val = GVV (variable, i, j);
+            double real_val = func (time_step * ht, i * hx, j * hy);
+            double diff = calc_val - real_val;
+            unsigned int border_type = grid.get_bored_type (i, j);
+            if  (border_type == INNER)
+              {
+                diff *= diff;
+              }
+            else
+              {
+                diff *= diff * 0.5;
+              }
+            L2_norm += diff;
+          }
+        return sqrt (L2_norm * hx * hy);
+      }
     unsigned int n_elements = grid.get_n_elements ();
     unsigned int  i = 0;
     unsigned int j = 0;
@@ -406,8 +389,8 @@ public:
       {
         grid.convert_element_i_to_ij (element_i, i, j);
         double calc_val = GVV (variable, i, j);
-        double real_val = func (time_step * ht, i * hx, j * hy);
-        double diff = calc_val - real_val;
+        double other_val = other->GVVn (variable, k * i, k * j);
+        double diff = calc_val - other_val;
         unsigned int border_type = grid.get_bored_type (i, j);
         if  (border_type == INNER)
           {
@@ -423,9 +406,43 @@ public:
   }
 
   template <unsigned int variable>
-  double calculate_W1_norm (unsigned int time_step)
+  double calculate_W1_norm (unsigned int time_step, matrix_storage *other, unsigned int k)
   {
-    constexpr double (*func) (double, double , double) = variable == G ? g : variable == V1 ? u1 : u2;
+    if (k < 2)
+      {
+        constexpr double (*func) (double, double , double) = variable == G ? g : variable == V1 ? u1 : u2;
+        unsigned int n_elements = grid.get_n_elements ();
+        unsigned int  i = 0;
+        unsigned int j = 0;
+        double W1_norm_x = 0;
+        double W1_norm_y = 0;
+        double hx = 0, hy = 0, ht = 0;
+        grid.get_h (&hx, &hy, &ht);
+        for (unsigned int element_i = 0; element_i < n_elements; ++element_i)
+          {
+            grid.convert_element_i_to_ij (element_i, i, j);
+            double calc_val = GVV (variable, i, j);
+            double real_val = func (time_step * ht, i * hx, j * hy);
+            double diff = calc_val - real_val;
+            if (grid.is_active_node (i + 1, j))
+              {
+                double forward_calc_val = GVV (variable, i + 1, j);
+                double forward_real_val = func (time_step * ht, (i + 1) * hx, j * hy);
+                double forward_diff = forward_calc_val - forward_real_val;
+                double forward_der = (forward_diff - diff) / hx;
+                W1_norm_x += forward_der * forward_der;
+              }
+            if (grid.is_active_node (i, j + 1))
+              {
+                double forward_calc_val = GVV (variable, i, j + 1);
+                double forward_real_val = func (time_step * ht, i * hx, (j + 1) * hy);
+                double forward_diff = forward_calc_val - forward_real_val;
+                double forward_der = (forward_diff - diff) / hy;
+                W1_norm_y += forward_der * forward_der;
+              }
+          }
+        return sqrt ((W1_norm_x + W1_norm_y) * hx * hy);
+      }
     unsigned int n_elements = grid.get_n_elements ();
     unsigned int  i = 0;
     unsigned int j = 0;
@@ -437,26 +454,194 @@ public:
       {
         grid.convert_element_i_to_ij (element_i, i, j);
         double calc_val = GVV (variable, i, j);
-        double real_val = func (time_step * ht, i * hx, j * hy);
-        double diff = calc_val - real_val;
+        double other_val = other->GVV (variable, k * i, k * j); 
+        double diff = calc_val - other_val;
         if (grid.is_active_node (i + 1, j))
           {
             double forward_calc_val = GVV (variable, i + 1, j);
-            double forward_real_val = func (time_step * ht, (i + 1) * hx, j * hy);
-            double forward_diff = forward_calc_val - forward_real_val;
+            double forward_other_val = other->GVVn (variable, k * (i + 1), k * j); 
+            double forward_diff = forward_calc_val - forward_other_val;
             double forward_der = (forward_diff - diff) / hx;
             W1_norm_x += forward_der * forward_der;
           }
         if (grid.is_active_node (i, j + 1))
           {
             double forward_calc_val = GVV (variable, i, j + 1);
-            double forward_real_val = func (time_step * ht, i * hx, (j + 1) * hy);
-            double forward_diff = forward_calc_val - forward_real_val;
+            double forward_other_val = other->GVV (variable, k * i, k * (j + 1)); 
+            double forward_diff = forward_calc_val - forward_other_val;
             double forward_der = (forward_diff - diff) / hy;
             W1_norm_y += forward_der * forward_der;
           }
       }
     return sqrt ((W1_norm_x + W1_norm_y) * hx * hy);
+    
   }
+
+
+public:
+
+  int compute_solution (matrix_storage *other, unsigned int k)
+  {
+    int ret = 0;
+
+    clock_t start, end;
+    start = clock();
+    unsigned int step = 0;
+    for (step = 0; step <= Nt; ++step)
+      {
+        if (solver_type == solver_own)
+          {
+            fill_matrix<solver_own> (step);
+          }
+        else
+          {
+            fill_matrix<solver_eigen> (step);
+          }
+        ret = solve (solver_type);
+        if (ret < 0 || ret == static_cast <int> (maxit))
+          {
+            std::cout << "ERROR: solver cannot solve " << ret << std::endl;
+            return ret;
+          }
+#if 0
+        double C_norm_G = matrix_rhs. template calculate_C_norm <G> (step);
+        double C_norm_V1 = matrix_rhs. template calculate_C_norm <V1> (step);
+        double C_norm_V2 = matrix_rhs. template calculate_C_norm <V2> (step);
+
+        double L2_norm_G = matrix_rhs. template calculate_L2_norm <G> (step);
+        double L2_norm_V1 = matrix_rhs. template calculate_L2_norm <V1> (step);
+        double L2_norm_V2 = matrix_rhs. template calculate_L2_norm <V2> (step);
+
+        double W1_norm_G = matrix_rhs. template calculate_W1_norm <G> (step);
+        double W1_norm_V1 = matrix_rhs. template calculate_W1_norm <V1> (step);
+        double W1_norm_V2 = matrix_rhs. template calculate_W1_norm <V2> (step);
+
+        printf ("Time step: %d, its = %d\n", step, ret);
+        printf("C_nrom: G = %e, V1 = %e, V2 = %e\n", C_norm_G, C_norm_V1, C_norm_V2); 
+        printf("L2_nrom: G = %e, V1 = %e, V2 = %e\n", L2_norm_G, L2_norm_V1, L2_norm_V2); 
+        printf("W1_nrom: G = %e, V1 = %e, V2 = %e\n", W1_norm_G, W1_norm_V1, W1_norm_V2); 
+#endif
+        update_prev_solution ();
+      }
+    end = clock();
+    double time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+    step -= 1;
+    if (other == nullptr)
+      {
+        double C_norm_G = calculate_C_norm <G> (step, nullptr, k);
+        double C_norm_V1 = calculate_C_norm <V1> (step, nullptr, k);
+        double C_norm_V2 = calculate_C_norm <V2> (step, nullptr, k);
+
+        double L2_norm_G = calculate_L2_norm <G> (step, nullptr, k);
+        double L2_norm_V1 = calculate_L2_norm <V1> (step, nullptr, k);
+        double L2_norm_V2 = calculate_L2_norm <V2> (step, nullptr, k);
+
+        double W1_norm_G = calculate_W1_norm <G> (step, nullptr, k);
+        double W1_norm_V1 = calculate_W1_norm <V1> (step, nullptr, k);
+        double W1_norm_V2 = calculate_W1_norm <V2> (step, nullptr, k);
+
+        printf ("Elapsed: %lf\n", time_used);
+        printf("C_nrom: G = %e, V1 = %e, V2 = %e\n", C_norm_G, C_norm_V1, C_norm_V2); 
+        printf("L2_nrom: G = %e, V1 = %e, V2 = %e\n", L2_norm_G, L2_norm_V1, L2_norm_V2);
+        printf("W1_nrom: G = %e, V1 = %e, V2 = %e\n", W1_norm_G, W1_norm_V1, W1_norm_V2);
+        return 0;
+      }
+    double C_norm_G = other-> template calculate_C_norm <G> (step, this, k);
+    double C_norm_V1 = other-> template calculate_C_norm <V1> (step, this, k);
+    double C_norm_V2 = other-> template calculate_C_norm <V2> (step, this, k);
+
+    double L2_norm_G = other-> template calculate_L2_norm <G> (step, this, k);
+    double L2_norm_V1 = other-> template calculate_L2_norm <V1> (step, this, k);
+    double L2_norm_V2 = other-> template calculate_L2_norm <V2> (step, this, k);
+
+    double W1_norm_G = other-> template calculate_W1_norm <G> (step, this, k);
+    double W1_norm_V1 = other-> template calculate_W1_norm <V1> (step, this, k);
+    double W1_norm_V2 = other-> template calculate_W1_norm <V2> (step, this, k);
+
+    printf("Nested k = %u\n", k);
+    printf("C_nrom: G = %e, V1 = %e, V2 = %e\n", C_norm_G, C_norm_V1, C_norm_V2); 
+    printf("L2_nrom: G = %e, V1 = %e, V2 = %e\n", L2_norm_G, L2_norm_V1, L2_norm_V2);
+    printf("W1_nrom: G = %e, V1 = %e, V2 = %e\n", W1_norm_G, W1_norm_V1, W1_norm_V2);
+    return 0;
+}
+
+  int prepare_computations (Parser &parser, unsigned int k)
+  {
+      unsigned int Nx = 0;
+      unsigned int Ny = 0;
+      if (parser.get ("Nx", Nx) < 0)
+        return -1;
+      if (parser.get ("Ny", Ny) < 0)
+        return -1;
+
+      Nx *= k;
+      Ny *= k;
+      grid.set_N (Nx, Ny);
+      grid.count_number_of_elements ();
+      grid.check_ij_to_n_elememts_mapping ();
+
+      double hx = 0;
+      if (parser.get ("hx", hx) < 0)
+        return -1;
+      double hy = 0;
+      if (parser.get ("hy", hy) < 0)
+        return -1;
+      double ht = 0;
+      if (parser.get ("ht", ht) < 0)
+        return -1;
+      hx /= k;
+      hy /= k;
+      grid.set_h (hx, hy, ht);
+
+      pp = 0;
+      if (parser.get ("pp", pp) < 0)
+        return -1;
+      mu = 0;
+      if (parser.get ("mu", mu) < 0)
+        return -1;
+      return 0;
+
+      solver_type = 0;
+      if (parser.get ("solver", solver_type) < 0)
+        return -1;
+
+      int ret = 0;
+      ret = allocate (solver_type);
+      if (ret < 0)
+        {
+          std::cerr << "Cannot allocate memmory" << std::endl;
+          return -1;
+        }
+      fill_matrix_pattern ();
+
+      ret = init_solver (parser);
+      if (ret < 0)
+        {
+          std::cerr << "Cannot init solver" << std::endl;
+          return -1;
+        }
+
+      init_solution ();
+
+      Nt = 0;
+      parser.get ("Nt", Nt);
+      maxit = 0;
+      parser.get ("maxit", maxit);
+
+
+    return 0;
+  }
+
+
+
+  ~matrix_storage (void)
+    {
+      delete[] matrix;
+      delete[] I;
+      delete[] rhs;
+      delete[] GVV_;
+      delete[] GVVn_;
+    }
+
 
 };

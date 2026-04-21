@@ -72,7 +72,7 @@ int matrix_storage::allocate (unsigned int solver_type)
     return 0;
   }
 
-int matrix_storage::fill_matrix_pattern (void)
+void matrix_storage::fill_matrix_pattern (void)
   {
     std::vector<unsigned int> one_row;
     one_row.reserve (100);
@@ -208,6 +208,5 @@ int matrix_storage::fill_matrix_pattern (void)
       }
     assert (filled == matrix_size);
     I[3 * n_elements] = filled;
-    return 0;
   }
 
