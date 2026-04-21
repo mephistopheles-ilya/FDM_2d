@@ -180,7 +180,6 @@ public:
         double alpha = rz / Apz;
         mult_sub_vec (q, u, alpha, Avec);
         add_vec (u, q);
-        //mult_sub_vec (x, x, -alpha, u);
         add_vec (x, u, alpha);
         mat_mult_vec (A, I, u, Avec);
         mult_sub_vec (r, r, alpha, Avec);
@@ -192,7 +191,7 @@ public:
         linear_combination (u, p, r, q, betta);
         rz = rrz;
       }
-    printf("r_norm = %e\n", r_norm / rhs_norm);
+    printf("last eps = %e\n", r_norm / rhs_norm);
     return maxit;
   }
 

@@ -15,8 +15,8 @@ int main(int argc, char **argv)
     parser. template add<double> ("hy", 0.01 / 2);
     parser. template add<unsigned int> ("Ny", 100 * 2);
 
-    parser. template add<double> ("ht", 0.01 / 4);
-    parser. template add<unsigned int> ("Nt", 100 * 4);
+    parser. template add<double> ("ht", 0.01 / 2);
+    parser. template add<unsigned int> ("Nt", 100 * 2);
 
     parser. template add<double> ("mu", 0.1);
     parser. template add<double> ("pp", 1.);
@@ -85,7 +85,7 @@ int main(int argc, char **argv)
             std::cout << "ERROR: solver cannot solve " << ret << std::endl;
             return ret;
           }
-#if 0
+#if 1
         double C_norm_G = matrix_rhs. template calculate_C_norm <G> (step);
         double C_norm_V1 = matrix_rhs. template calculate_C_norm <V1> (step);
         double C_norm_V2 = matrix_rhs. template calculate_C_norm <V2> (step);
@@ -107,6 +107,7 @@ int main(int argc, char **argv)
       }
     end = clock();
     double time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+    step -= 1;
     double C_norm_G = matrix_rhs. template calculate_C_norm <G> (step);
     double C_norm_V1 = matrix_rhs. template calculate_C_norm <V1> (step);
     double C_norm_V2 = matrix_rhs. template calculate_C_norm <V2> (step);

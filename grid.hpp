@@ -8,11 +8,6 @@
 #define Y_DOWN   3
 #define Y_UP     4
 #define INNER    5
-#define CORNER_1 6
-#define CORNER_2 7
-#define CORNER_3 8
-#define CORNER_4 9
-
 
 class Grid
 {
@@ -63,15 +58,6 @@ public:
   unsigned int get_bored_type (unsigned int i, unsigned int j)
     {
       assert (is_active_node (i, j));
-
-      if (i == 0 && j == 0)
-        return CORNER_1;
-      if (i == Nx && j == 0)
-        return CORNER_2;
-      if (i == Nx && j == Ny)
-        return CORNER_3;
-      if (i == 0 && j == Ny)
-        return CORNER_4;
 
       if (i == 0)
         return X_LEFT;

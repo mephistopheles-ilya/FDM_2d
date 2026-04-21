@@ -11,6 +11,7 @@ unsigned int matrix_storage::fill_matrix (unsigned int time_step)
 
     double min_g = min_G ();
     double mum = mu * std::exp (-min_g);
+    time_step = (time_step == 0) ? time_step : time_step - 1;
     for (unsigned int element_i = 0; element_i < n_elements; element_i++)
       {
         unsigned int i = 0;
@@ -87,7 +88,6 @@ unsigned int matrix_storage::fill_matrix (unsigned int time_step)
                       0.5 * GVVn (G, i + 3, j) * GVVn (V1, i + 3, j) + (2 - GVVn (G, i, j)) * 
                       (GVVn (V1, i, j) - 2.5 * GVVn (V1, i + 1, j) + 2 * GVVn (V1, i + 2, j) - 0.5 * GVVn (V1, i + 3, j))) + 2 * ht * Func_0 (time_step * ht, i * hx, j * hy),
                     G, element_i);
-               // set_rhs (g (time_step * ht, i * hx, j * hy), G, element_i);
 
                 // equation for V1
                 set_diag<solver_type> (1, V1, element_i);
@@ -111,7 +111,6 @@ unsigned int matrix_storage::fill_matrix (unsigned int time_step)
                       2.5 * GVVn (G, i - 1, j) * GVVn (V1, i - 1, j) + 2 * GVVn (G, i - 2, j) * GVVn (V1, i - 2, j) - 0.5 * GVVn (G, i - 3, j) * GVVn (V1, i - 3, j) + 
                       (2 - GVVn (G, i, j)) * (GVVn (V1, i, j) - 2.5 * GVVn (V1, i - 1, j) + 2 * GVVn (V1, i - 2, j) - 0.5 * GVVn (V1, i - 3, j))) + 
                     2 * ht * Func_0 (time_step * ht, i * hx, j * hy), G, element_i);
-                //set_rhs (g (time_step * ht, i * hx, j * hy), G, element_i);
 
                 // equation for V1
                 set_diag<solver_type> (1, V1, element_i);
@@ -135,7 +134,6 @@ unsigned int matrix_storage::fill_matrix (unsigned int time_step)
                       0.5 * GVVn (G, i, j + 3) * GVVn (V2, i, j + 3) + (2 - GVVn (G, i, j)) * 
                       (GVVn (V2, i, j) - 2.5 * GVVn (V2, i, j + 1) + 2 * GVVn (V2, i, j + 2) - 0.5 * GVVn (V2, i, j + 3))) + 2 * ht * Func_0 (time_step * ht, i * hx, j * hy),
                     G, element_i);
-                //set_rhs (g (time_step * ht, i * hx, j * hy), G, element_i);
 
                 // equation for V1
                 set_diag<solver_type> (1, V1, element_i);
@@ -158,67 +156,6 @@ unsigned int matrix_storage::fill_matrix (unsigned int time_step)
                       2.5 * GVVn (G, i, j - 1) * GVVn (V2, i, j - 1) + 2 * GVVn (G, i, j - 2) * GVVn (V2, i, j - 2) - 0.5 * GVVn (G, i, j - 3) * GVVn (V2, i, j - 3) + 
                       (2 - GVVn (G, i, j)) * (GVVn (V2, i, j) - 2.5 * GVVn (V2, i, j - 1) + 2 * GVVn (V2, i, j - 2) - 0.5 * GVVn (V2, i, j - 3))) + 
                     2 * ht * Func_0 (time_step * ht, i * hx, j * hy), G, element_i);
-                //set_rhs (g (time_step * ht, i * hx, j * hy), G, element_i);
-
-                // equation for V1
-                set_diag<solver_type> (1, V1, element_i);
-                set_rhs (0, V1, element_i);
-
-                // equation for V2
-                set_diag<solver_type> (1, V2, element_i);
-                set_rhs (0, V2, element_i);
-                break;
-              }
-            case CORNER_1:
-              {
-                // equation for G
-                set_diag<solver_type> (1, G, element_i);
-                set_rhs (g (time_step * ht, i * hx, j * hy), G, element_i);
-
-                // equation for V1
-                set_diag<solver_type> (1, V1, element_i);
-                set_rhs (0, V1, element_i);
-
-                // equation for V2
-                set_diag<solver_type> (1, V2, element_i);
-                set_rhs (0, V2, element_i);
-                break;
-              }
-            case CORNER_2:
-              {
-                // equation for G
-                set_diag<solver_type> (1, G, element_i);
-                set_rhs (g (time_step * ht, i * hx, j * hy), G, element_i);
-
-                // equation for V1
-                set_diag<solver_type> (1, V1, element_i);
-                set_rhs (0, V1, element_i);
-
-                // equation for V2
-                set_diag<solver_type> (1, V2, element_i);
-                set_rhs (0, V2, element_i);
-                break;
-              }
-            case CORNER_3:
-              {
-                // equation for G
-                set_diag<solver_type> (1, G, element_i);
-                set_rhs (g (time_step * ht, i * hx, j * hy), G, element_i);
-
-                // equation for V1
-                set_diag<solver_type> (1, V1, element_i);
-                set_rhs (0, V1, element_i);
-
-                // equation for V2
-                set_diag<solver_type> (1, V2, element_i);
-                set_rhs (0, V2, element_i);
-                break;
-              }
-            case CORNER_4:
-              {
-                // equation for G
-                set_diag<solver_type> (1, G, element_i);
-                set_rhs (g (time_step * ht, i * hx, j * hy), G, element_i);
 
                 // equation for V1
                 set_diag<solver_type> (1, V1, element_i);
