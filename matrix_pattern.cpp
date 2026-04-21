@@ -30,6 +30,7 @@ int matrix_storage::allocate (unsigned int solver_type)
             // left boundary
             case X_LEFT:
               {
+                sz += 3;
                 break;
               }
 
@@ -168,7 +169,11 @@ int matrix_storage::fill_matrix_pattern (void)
             // left boundary
             case X_LEFT:
               {
+                add_column (G, i + 1, j);
+                add_column (V1, i + 1, j);
+                add_column (V1, i, j);
                 finilize_one_row (G, i, j);
+
                 finilize_one_row (V1, i, j);
                 finilize_one_row (V2, i, j);
                 break;
