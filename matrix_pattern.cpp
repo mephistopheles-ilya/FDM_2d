@@ -37,6 +37,7 @@ int matrix_storage::allocate (unsigned int solver_type)
             // right boundary  
             case X_RIGHT:
               {
+                sz += 3;
                 break;
               }
             // down boundary
@@ -183,7 +184,11 @@ int matrix_storage::fill_matrix_pattern (void)
             // right boundary  
             case X_RIGHT:
               {
+                add_column (G, i - 1, j);
+                add_column (V1, i, j);
+                add_column (V1, i - 1, j);
                 finilize_one_row (G, i, j);
+
                 finilize_one_row (V1, i, j);
                 finilize_one_row (V2, i, j);
                 break;
