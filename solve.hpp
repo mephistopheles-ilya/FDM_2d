@@ -69,7 +69,7 @@ class linear_solver
       }
 
     __m256d total1 = _mm256_add_pd (sum0, sum1);
-    __m256d total2 = _mm256_add_pd (sum1, sum2);
+    __m256d total2 = _mm256_add_pd (sum2, sum3);
     __m256d total = _mm256_add_pd (total1, total2);
 
     for (;i < n; ++i)
@@ -191,7 +191,7 @@ public:
         linear_combination (u, p, r, q, betta);
         rz = rrz;
       }
-    printf("last eps = %e\n", r_norm / rhs_norm);
+    printf("last eps = %e, it = %u\n", r_norm / rhs_norm, it);
     return maxit;
   }
 

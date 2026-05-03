@@ -501,7 +501,7 @@ public:
         if (ret < 0 || ret == static_cast <int> (maxit))
           {
             std::cout << "ERROR: solver cannot solve " << ret << std::endl;
-            return ret;
+            return -1;
           }
 #if 0
         double C_norm_G = matrix_rhs. template calculate_C_norm <G> (step);
@@ -526,19 +526,20 @@ public:
     end = clock();
     double time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
     step -= 1;
+    unsigned int mult = std::pow (2, k);
     if (other == nullptr)
       {
-        double C_norm_G = calculate_C_norm <G> (step, nullptr, k);
-        double C_norm_V1 = calculate_C_norm <V1> (step, nullptr, k);
-        double C_norm_V2 = calculate_C_norm <V2> (step, nullptr, k);
+        double C_norm_G = calculate_C_norm <G> (step, nullptr, mult);
+        double C_norm_V1 = calculate_C_norm <V1> (step, nullptr, mult);
+        double C_norm_V2 = calculate_C_norm <V2> (step, nullptr, mult);
 
-        double L2_norm_G = calculate_L2_norm <G> (step, nullptr, k);
-        double L2_norm_V1 = calculate_L2_norm <V1> (step, nullptr, k);
-        double L2_norm_V2 = calculate_L2_norm <V2> (step, nullptr, k);
+        double L2_norm_G = calculate_L2_norm <G> (step, nullptr, mult);
+        double L2_norm_V1 = calculate_L2_norm <V1> (step, nullptr, mult);
+        double L2_norm_V2 = calculate_L2_norm <V2> (step, nullptr, mult);
 
-        double W1_norm_G = calculate_W1_norm <G> (step, nullptr, k);
-        double W1_norm_V1 = calculate_W1_norm <V1> (step, nullptr, k);
-        double W1_norm_V2 = calculate_W1_norm <V2> (step, nullptr, k);
+        double W1_norm_G = calculate_W1_norm <G> (step, nullptr, mult);
+        double W1_norm_V1 = calculate_W1_norm <V1> (step, nullptr, mult);
+        double W1_norm_V2 = calculate_W1_norm <V2> (step, nullptr, mult);
 
         printf ("Elapsed: %lf\n", time_used);
         printf("C_nrom: G = %e, V1 = %e, V2 = %e\n", C_norm_G, C_norm_V1, C_norm_V2); 
@@ -546,17 +547,17 @@ public:
         printf("W1_nrom: G = %e, V1 = %e, V2 = %e\n", W1_norm_G, W1_norm_V1, W1_norm_V2);
         return 0;
       }
-    double C_norm_G = other-> template calculate_C_norm <G> (step, this, k);
-    double C_norm_V1 = other-> template calculate_C_norm <V1> (step, this, k);
-    double C_norm_V2 = other-> template calculate_C_norm <V2> (step, this, k);
+    double C_norm_G = other-> template calculate_C_norm <G> (step, this, mult);
+    double C_norm_V1 = other-> template calculate_C_norm <V1> (step, this, mult);
+    double C_norm_V2 = other-> template calculate_C_norm <V2> (step, this, mult);
 
-    double L2_norm_G = other-> template calculate_L2_norm <G> (step, this, k);
-    double L2_norm_V1 = other-> template calculate_L2_norm <V1> (step, this, k);
-    double L2_norm_V2 = other-> template calculate_L2_norm <V2> (step, this, k);
+    double L2_norm_G = other-> template calculate_L2_norm <G> (step, this, mult);
+    double L2_norm_V1 = other-> template calculate_L2_norm <V1> (step, this, mult);
+    double L2_norm_V2 = other-> template calculate_L2_norm <V2> (step, this, mult);
 
-    double W1_norm_G = other-> template calculate_W1_norm <G> (step, this, k);
-    double W1_norm_V1 = other-> template calculate_W1_norm <V1> (step, this, k);
-    double W1_norm_V2 = other-> template calculate_W1_norm <V2> (step, this, k);
+    double W1_norm_G = other-> template calculate_W1_norm <G> (step, this, mult);
+    double W1_norm_V1 = other-> template calculate_W1_norm <V1> (step, this, mult);
+    double W1_norm_V2 = other-> template calculate_W1_norm <V2> (step, this, mult);
 
     printf("Nested k = %u\n", k);
     printf("C_nrom: G = %e, V1 = %e, V2 = %e\n", C_norm_G, C_norm_V1, C_norm_V2); 
@@ -574,8 +575,10 @@ public:
       if (parser.get ("Ny", Ny) < 0)
         return -1;
 
-      Nx *= k;
-      Ny *= k;
+      unsigned int mult = std::pow (2, k);
+
+      Nx *= mult;
+      Ny *= mult;
       grid.set_N (Nx, Ny);
       grid.count_number_of_elements ();
       grid.check_ij_to_n_elememts_mapping ();
@@ -589,8 +592,9 @@ public:
       double ht = 0;
       if (parser.get ("ht", ht) < 0)
         return -1;
-      hx /= k;
-      hy /= k;
+      hx /= mult;
+      hy /= mult;
+      ht /= mult;
       grid.set_h (hx, hy, ht);
 
       pp = 0;
@@ -599,7 +603,6 @@ public:
       mu = 0;
       if (parser.get ("mu", mu) < 0)
         return -1;
-      return 0;
 
       solver_type = 0;
       if (parser.get ("solver", solver_type) < 0)
@@ -625,6 +628,7 @@ public:
 
       Nt = 0;
       parser.get ("Nt", Nt);
+      Nt *= mult;
       maxit = 0;
       parser.get ("maxit", maxit);
 

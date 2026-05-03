@@ -59,7 +59,11 @@ int matrix_storage::allocate (unsigned int solver_type)
     matrix_size = sz;
 
     if (solver_type == solver_own)
-      matrix = new double [matrix_size];
+      {
+        matrix = new double [matrix_size];
+        for(unsigned int l = 0; l < matrix_size; ++l)
+          matrix[l] = 0;
+      }
     I = new unsigned int [matrix_size];
     rhs = new double [3 * n_elements];
 

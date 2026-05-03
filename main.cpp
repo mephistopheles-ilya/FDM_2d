@@ -36,25 +36,24 @@ int main(int argc, char **argv)
     parser.print_values ();
 
     matrix_storage matrix_rhs;
-    ret = matrix_rhs.prepare_computations (parser, 1);
+    ret = matrix_rhs.prepare_computations (parser, 0);
     if (ret < 0)
       return ret;
 
-    ret = matrix_rhs.compute_solution (nullptr, 1);
+    ret = matrix_rhs.compute_solution (nullptr, 0);
     if (ret < 0)
       return ret;
 
     unsigned int np = 0;
     parser.get ("np", np);
-    unsigned int k = 0;
-    for (k = 2; k <= np; ++k)
+    for (unsigned int k = 1; k <= np; ++k)
       {
         matrix_storage nested_matrix_rhs;
-        ret = matrix_rhs.prepare_computations (parser, k);
+        ret = nested_matrix_rhs.prepare_computations (parser, k);
         if (ret < 0)
           return ret;
 
-        ret = matrix_rhs.compute_solution (&matrix_rhs, k);
+        ret = nested_matrix_rhs.compute_solution (&matrix_rhs, k);
         if (ret < 0)
           return ret;
       }
