@@ -35,7 +35,7 @@ class linear_solver
           res[i] = s;
       }
   }
-#if 0
+#if 1
   double dot (const double *vec1, const double *vec2)
   {
     double sum = 0;
@@ -80,7 +80,7 @@ class linear_solver
 
     return sum + res256[0] + res256[1] + res256[2] + res256[3];
 }
-#endif
+#else
   double dot (const double *vec1, const double *vec2)
   {
     double s = 0;
@@ -90,6 +90,7 @@ class linear_solver
       }
     return s;
   }
+#endif
 
 
   void mult_sub_vec (double *res, const double *vec1, double w, const double *vec2)

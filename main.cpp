@@ -1,12 +1,12 @@
 #include "matrix_storage.hpp"
 #include "parse_command_line.hpp"
-//#include <fenv.h>
+#include <fenv.h>
 
 
 
 int main(int argc, char **argv)
 {
-    //feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW | FE_UNDERFLOW);
+    feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
 
     Parser parser;
     parser. template add<double> ("hx", 0.01);
@@ -14,7 +14,7 @@ int main(int argc, char **argv)
     parser. template add<double> ("ht", 0.01);
 
     parser. template add<double> ("mu", 0.1);
-    parser. template add<double> ("pp", 10.);
+    parser. template add<double> ("pp", 1.);
 
     parser. template add<double> ("eps", 1e-8);
     parser. template add<unsigned int> ("maxit", 2000);

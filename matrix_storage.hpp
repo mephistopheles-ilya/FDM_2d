@@ -43,8 +43,8 @@ class matrix_storage
   double mu = 0;
 
   Eigen::SparseMatrix<double, Eigen::RowMajor> eigen_A;
-  //Eigen::BiCGSTAB<Eigen::SparseMatrix<double, Eigen::RowMajor>, Eigen::IdentityPreconditioner> eigen_solver;
-  Eigen::BiCGSTAB<Eigen::SparseMatrix<double, Eigen::RowMajor>, Eigen::DiagonalPreconditioner<double>> eigen_solver;
+  Eigen::BiCGSTAB<Eigen::SparseMatrix<double, Eigen::RowMajor>, Eigen::IdentityPreconditioner> eigen_solver;
+  //Eigen::BiCGSTAB<Eigen::SparseMatrix<double, Eigen::RowMajor>, Eigen::DiagonalPreconditioner<double>> eigen_solver;
   //Eigen::BiCGSTAB<Eigen::SparseMatrix<double, Eigen::RowMajor>, Eigen::IncompleteLUT<double>> eigen_solver;
   double *A_values = nullptr;    
   int *A_inner_indices = nullptr;
@@ -281,7 +281,8 @@ class matrix_storage
             }
           unsigned int n_elements = grid.get_n_elements ();
           Eigen::Map<Eigen::VectorXd> solution_map (GVV_, 3 * n_elements);
-          solution_map = eigen_solver.solve (Eigen::Map<Eigen::VectorXd> (rhs, 3 * n_elements));
+          //solution_map = eigen_solver.solve (Eigen::Map<Eigen::VectorXd> (rhs, 3 * n_elements));
+          solution_map = eigen_solver.solveWithGuess(Eigen::Map<Eigen::VectorXd> (rhs, 3 * n_elements), Eigen::Map<Eigen::VectorXd> (GVVn_, 3 * n_elements));
           if (eigen_solver.info() != Eigen::Success)
             {
               std::cerr << "ERROR: Compute failed!" << std::endl;
