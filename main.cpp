@@ -10,16 +10,11 @@ int main(int argc, char **argv)
 
     Parser parser;
     parser. template add<double> ("hx", 0.01);
-    parser. template add<unsigned int> ("Nx", 100);
-
     parser. template add<double> ("hy", 0.01);
-    parser. template add<unsigned int> ("Ny", 100);
-
     parser. template add<double> ("ht", 0.01);
-    parser. template add<unsigned int> ("Nt", 100);
 
     parser. template add<double> ("mu", 0.1);
-    parser. template add<double> ("pp", 1.);
+    parser. template add<double> ("pp", 10.);
 
     parser. template add<double> ("eps", 1e-8);
     parser. template add<unsigned int> ("maxit", 2000);

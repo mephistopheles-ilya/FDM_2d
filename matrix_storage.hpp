@@ -43,8 +43,8 @@ class matrix_storage
   double mu = 0;
 
   Eigen::SparseMatrix<double, Eigen::RowMajor> eigen_A;
-  Eigen::BiCGSTAB<Eigen::SparseMatrix<double, Eigen::RowMajor>, Eigen::IdentityPreconditioner> eigen_solver;
-  //Eigen::BiCGSTAB<Eigen::SparseMatrix<double, Eigen::RowMajor>, Eigen::DiagonalPreconditioner<double>> eigen_solver;
+  //Eigen::BiCGSTAB<Eigen::SparseMatrix<double, Eigen::RowMajor>, Eigen::IdentityPreconditioner> eigen_solver;
+  Eigen::BiCGSTAB<Eigen::SparseMatrix<double, Eigen::RowMajor>, Eigen::DiagonalPreconditioner<double>> eigen_solver;
   //Eigen::BiCGSTAB<Eigen::SparseMatrix<double, Eigen::RowMajor>, Eigen::IncompleteLUT<double>> eigen_solver;
   double *A_values = nullptr;    
   int *A_inner_indices = nullptr;
@@ -216,14 +216,7 @@ class matrix_storage
   {
     unsigned int n_elements = grid.get_n_elements ();
     double eps = 0;
-    if (parser.get ("eps", eps) < 0)
-      return -1;
-    unsigned int maxit = 0; 
-    if (parser.get ("maxit", maxit) < 0)
-      return -1;
-    unsigned int solver_type = 0;
-    if (parser.get ("solver", solver_type) < 0)
-      return -1;
+    parser.get ("eps", eps);
     if (solver_type == solver_own)
       {
         solver.set_parms (eps, maxit);
@@ -307,9 +300,9 @@ class matrix_storage
   unsigned int fill_matrix (unsigned int time_step);
 
   template <unsigned int variable>
-  double calculate_C_norm (unsigned int time_step, matrix_storage *other, unsigned int k)
+  double calculate_C_norm (unsigned int time_step, matrix_storage *other, unsigned int nested_ratio)
   {
-    if (k < 2)
+    if (nested_ratio <= 1)
       {
         constexpr double (*func) (double, double , double) = variable == G ? g : variable == V1 ? u1 : u2;
         unsigned int n_elements = grid.get_n_elements ();
@@ -338,7 +331,7 @@ class matrix_storage
       {
         grid.convert_element_i_to_ij (element_i, i, j);
         double calc_val = GVV (variable, i, j);
-        double other_val = other->GVV (variable, k * i, k * j);
+        double other_val = other->GVV (variable, nested_ratio * i, nested_ratio * j);
         double diff_abs = fabs (calc_val - other_val);
         C_norm = std::max (C_norm, diff_abs);
       }
@@ -349,9 +342,9 @@ class matrix_storage
   }
 
   template <unsigned int variable>
-  double calculate_L2_norm (unsigned int time_step, matrix_storage *other, unsigned int k)
+  double calculate_L2_norm (unsigned int time_step, matrix_storage *other, unsigned int nested_ratio)
   {
-    if (k < 2)
+    if (nested_ratio <= 1)
       {
         constexpr double (*func) (double, double , double) = variable == G ? g : variable == V1 ? u1 : u2;
         unsigned int n_elements = grid.get_n_elements ();
@@ -389,7 +382,7 @@ class matrix_storage
       {
         grid.convert_element_i_to_ij (element_i, i, j);
         double calc_val = GVV (variable, i, j);
-        double other_val = other->GVVn (variable, k * i, k * j);
+        double other_val = other->GVVn (variable, nested_ratio * i, nested_ratio * j);
         double diff = calc_val - other_val;
         unsigned int border_type = grid.get_bored_type (i, j);
         if  (border_type == INNER)
@@ -406,9 +399,9 @@ class matrix_storage
   }
 
   template <unsigned int variable>
-  double calculate_W1_norm (unsigned int time_step, matrix_storage *other, unsigned int k)
+  double calculate_W1_norm (unsigned int time_step, matrix_storage *other, unsigned int nested_ratio)
   {
-    if (k < 2)
+    if (nested_ratio < 2)
       {
         constexpr double (*func) (double, double , double) = variable == G ? g : variable == V1 ? u1 : u2;
         unsigned int n_elements = grid.get_n_elements ();
@@ -454,12 +447,12 @@ class matrix_storage
       {
         grid.convert_element_i_to_ij (element_i, i, j);
         double calc_val = GVV (variable, i, j);
-        double other_val = other->GVV (variable, k * i, k * j); 
+        double other_val = other->GVV (variable, nested_ratio * i, nested_ratio * j); 
         double diff = calc_val - other_val;
         if (grid.is_active_node (i + 1, j))
           {
             double forward_calc_val = GVV (variable, i + 1, j);
-            double forward_other_val = other->GVVn (variable, k * (i + 1), k * j); 
+            double forward_other_val = other->GVVn (variable, nested_ratio * (i + 1), nested_ratio * j); 
             double forward_diff = forward_calc_val - forward_other_val;
             double forward_der = (forward_diff - diff) / hx;
             W1_norm_x += forward_der * forward_der;
@@ -467,7 +460,7 @@ class matrix_storage
         if (grid.is_active_node (i, j + 1))
           {
             double forward_calc_val = GVV (variable, i, j + 1);
-            double forward_other_val = other->GVV (variable, k * i, k * (j + 1)); 
+            double forward_other_val = other->GVV (variable, nested_ratio * i, nested_ratio * (j + 1)); 
             double forward_diff = forward_calc_val - forward_other_val;
             double forward_der = (forward_diff - diff) / hy;
             W1_norm_y += forward_der * forward_der;
@@ -503,43 +496,25 @@ public:
             std::cout << "ERROR: solver cannot solve " << ret << std::endl;
             return -1;
           }
-#if 0
-        double C_norm_G = matrix_rhs. template calculate_C_norm <G> (step);
-        double C_norm_V1 = matrix_rhs. template calculate_C_norm <V1> (step);
-        double C_norm_V2 = matrix_rhs. template calculate_C_norm <V2> (step);
-
-        double L2_norm_G = matrix_rhs. template calculate_L2_norm <G> (step);
-        double L2_norm_V1 = matrix_rhs. template calculate_L2_norm <V1> (step);
-        double L2_norm_V2 = matrix_rhs. template calculate_L2_norm <V2> (step);
-
-        double W1_norm_G = matrix_rhs. template calculate_W1_norm <G> (step);
-        double W1_norm_V1 = matrix_rhs. template calculate_W1_norm <V1> (step);
-        double W1_norm_V2 = matrix_rhs. template calculate_W1_norm <V2> (step);
-
-        printf ("Time step: %d, its = %d\n", step, ret);
-        printf("C_nrom: G = %e, V1 = %e, V2 = %e\n", C_norm_G, C_norm_V1, C_norm_V2); 
-        printf("L2_nrom: G = %e, V1 = %e, V2 = %e\n", L2_norm_G, L2_norm_V1, L2_norm_V2); 
-        printf("W1_nrom: G = %e, V1 = %e, V2 = %e\n", W1_norm_G, W1_norm_V1, W1_norm_V2); 
-#endif
         update_prev_solution ();
       }
     end = clock();
     double time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
     step -= 1;
-    unsigned int mult = std::pow (2, k);
+    unsigned int nested_ratio = std::pow (2, k);
     if (other == nullptr)
       {
-        double C_norm_G = calculate_C_norm <G> (step, nullptr, mult);
-        double C_norm_V1 = calculate_C_norm <V1> (step, nullptr, mult);
-        double C_norm_V2 = calculate_C_norm <V2> (step, nullptr, mult);
+        double C_norm_G = calculate_C_norm <G> (step, nullptr, nested_ratio);
+        double C_norm_V1 = calculate_C_norm <V1> (step, nullptr, nested_ratio);
+        double C_norm_V2 = calculate_C_norm <V2> (step, nullptr, nested_ratio);
 
-        double L2_norm_G = calculate_L2_norm <G> (step, nullptr, mult);
-        double L2_norm_V1 = calculate_L2_norm <V1> (step, nullptr, mult);
-        double L2_norm_V2 = calculate_L2_norm <V2> (step, nullptr, mult);
+        double L2_norm_G = calculate_L2_norm <G> (step, nullptr, nested_ratio);
+        double L2_norm_V1 = calculate_L2_norm <V1> (step, nullptr, nested_ratio);
+        double L2_norm_V2 = calculate_L2_norm <V2> (step, nullptr, nested_ratio);
 
-        double W1_norm_G = calculate_W1_norm <G> (step, nullptr, mult);
-        double W1_norm_V1 = calculate_W1_norm <V1> (step, nullptr, mult);
-        double W1_norm_V2 = calculate_W1_norm <V2> (step, nullptr, mult);
+        double W1_norm_G = calculate_W1_norm <G> (step, nullptr, nested_ratio);
+        double W1_norm_V1 = calculate_W1_norm <V1> (step, nullptr, nested_ratio);
+        double W1_norm_V2 = calculate_W1_norm <V2> (step, nullptr, nested_ratio);
 
         printf ("Elapsed: %lf\n", time_used);
         printf("C_nrom: G = %e, V1 = %e, V2 = %e\n", C_norm_G, C_norm_V1, C_norm_V2); 
@@ -547,17 +522,17 @@ public:
         printf("W1_nrom: G = %e, V1 = %e, V2 = %e\n", W1_norm_G, W1_norm_V1, W1_norm_V2);
         return 0;
       }
-    double C_norm_G = other-> template calculate_C_norm <G> (step, this, mult);
-    double C_norm_V1 = other-> template calculate_C_norm <V1> (step, this, mult);
-    double C_norm_V2 = other-> template calculate_C_norm <V2> (step, this, mult);
+    double C_norm_G = other-> template calculate_C_norm <G> (step, this, nested_ratio);
+    double C_norm_V1 = other-> template calculate_C_norm <V1> (step, this, nested_ratio);
+    double C_norm_V2 = other-> template calculate_C_norm <V2> (step, this, nested_ratio);
 
-    double L2_norm_G = other-> template calculate_L2_norm <G> (step, this, mult);
-    double L2_norm_V1 = other-> template calculate_L2_norm <V1> (step, this, mult);
-    double L2_norm_V2 = other-> template calculate_L2_norm <V2> (step, this, mult);
+    double L2_norm_G = other-> template calculate_L2_norm <G> (step, this, nested_ratio);
+    double L2_norm_V1 = other-> template calculate_L2_norm <V1> (step, this, nested_ratio);
+    double L2_norm_V2 = other-> template calculate_L2_norm <V2> (step, this, nested_ratio);
 
-    double W1_norm_G = other-> template calculate_W1_norm <G> (step, this, mult);
-    double W1_norm_V1 = other-> template calculate_W1_norm <V1> (step, this, mult);
-    double W1_norm_V2 = other-> template calculate_W1_norm <V2> (step, this, mult);
+    double W1_norm_G = other-> template calculate_W1_norm <G> (step, this, nested_ratio);
+    double W1_norm_V1 = other-> template calculate_W1_norm <V1> (step, this, nested_ratio);
+    double W1_norm_V2 = other-> template calculate_W1_norm <V2> (step, this, nested_ratio);
 
     printf("Nested k = %u\n", k);
     printf("C_nrom: G = %e, V1 = %e, V2 = %e\n", C_norm_G, C_norm_V1, C_norm_V2); 
@@ -568,45 +543,33 @@ public:
 
   int prepare_computations (Parser &parser, unsigned int k)
   {
-      unsigned int Nx = 0;
-      unsigned int Ny = 0;
-      if (parser.get ("Nx", Nx) < 0)
-        return -1;
-      if (parser.get ("Ny", Ny) < 0)
-        return -1;
+      unsigned int nested_ratio = std::pow (2, k);
+      double hx = 0;
+      double hy = 0;
+      double ht = 0;
+      parser.get ("hx", hx);
+      parser.get ("hy", hy);
+      parser.get ("ht", ht);
+      hx /= nested_ratio;
+      hy /= nested_ratio;
+      ht /= nested_ratio;
+      unsigned int Nx = 1./hx;
+      unsigned int Ny = 1./hy;
+      Nt = 1./ht;
 
-      unsigned int mult = std::pow (2, k);
-
-      Nx *= mult;
-      Ny *= mult;
       grid.set_N (Nx, Ny);
       grid.count_number_of_elements ();
       grid.check_ij_to_n_elememts_mapping ();
-
-      double hx = 0;
-      if (parser.get ("hx", hx) < 0)
-        return -1;
-      double hy = 0;
-      if (parser.get ("hy", hy) < 0)
-        return -1;
-      double ht = 0;
-      if (parser.get ("ht", ht) < 0)
-        return -1;
-      hx /= mult;
-      hy /= mult;
-      ht /= mult;
       grid.set_h (hx, hy, ht);
 
+      maxit = 0;
+      parser.get ("maxit", maxit);
       pp = 0;
-      if (parser.get ("pp", pp) < 0)
-        return -1;
+      parser.get ("pp", pp);
       mu = 0;
-      if (parser.get ("mu", mu) < 0)
-        return -1;
-
+      parser.get ("mu", mu);
       solver_type = 0;
-      if (parser.get ("solver", solver_type) < 0)
-        return -1;
+      parser.get ("solver", solver_type);
 
       int ret = 0;
       ret = allocate (solver_type);
@@ -625,13 +588,6 @@ public:
         }
 
       init_solution ();
-
-      Nt = 0;
-      parser.get ("Nt", Nt);
-      Nt *= mult;
-      maxit = 0;
-      parser.get ("maxit", maxit);
-
 
     return 0;
   }
