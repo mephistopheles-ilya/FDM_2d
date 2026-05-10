@@ -6,7 +6,7 @@
 
 int main(int argc, char **argv)
 {
-    feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+    //feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
 
     Parser parser;
     parser. template add<double> ("hx", 0.01);

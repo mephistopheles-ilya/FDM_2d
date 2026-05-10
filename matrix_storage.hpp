@@ -43,9 +43,9 @@ class matrix_storage
   double mu = 0;
 
   Eigen::SparseMatrix<double, Eigen::RowMajor> eigen_A;
-  Eigen::BiCGSTAB<Eigen::SparseMatrix<double, Eigen::RowMajor>, Eigen::IdentityPreconditioner> eigen_solver;
+  //Eigen::BiCGSTAB<Eigen::SparseMatrix<double, Eigen::RowMajor>, Eigen::IdentityPreconditioner> eigen_solver;
   //Eigen::BiCGSTAB<Eigen::SparseMatrix<double, Eigen::RowMajor>, Eigen::DiagonalPreconditioner<double>> eigen_solver;
-  //Eigen::BiCGSTAB<Eigen::SparseMatrix<double, Eigen::RowMajor>, Eigen::IncompleteLUT<double>> eigen_solver;
+  Eigen::BiCGSTAB<Eigen::SparseMatrix<double, Eigen::RowMajor>, Eigen::IncompleteLUT<double>> eigen_solver;
   double *A_values = nullptr;    
   int *A_inner_indices = nullptr;
   int *A_outer_starts = nullptr; 
@@ -518,9 +518,9 @@ public:
         double W1_norm_V2 = calculate_W1_norm <V2> (step, nullptr, nested_ratio);
 
         printf ("Elapsed: %lf\n", time_used);
-        printf("C_nrom: G = %e, V1 = %e, V2 = %e\n", C_norm_G, C_norm_V1, C_norm_V2); 
-        printf("L2_nrom: G = %e, V1 = %e, V2 = %e\n", L2_norm_G, L2_norm_V1, L2_norm_V2);
-        printf("W1_nrom: G = %e, V1 = %e, V2 = %e\n", W1_norm_G, W1_norm_V1, W1_norm_V2);
+        printf("C_norm G = %e V1 = %e V2 = %e\n", C_norm_G, C_norm_V1, C_norm_V2); 
+        printf("L2_norm G = %e V1 = %e V2 = %e\n", L2_norm_G, L2_norm_V1, L2_norm_V2);
+        printf("W1_norm G = %e V1 = %e V2 = %e\n", W1_norm_G, W1_norm_V1, W1_norm_V2);
         return 0;
       }
     double C_norm_G = other-> template calculate_C_norm <G> (step, this, nested_ratio);
@@ -536,9 +536,9 @@ public:
     double W1_norm_V2 = other-> template calculate_W1_norm <V2> (step, this, nested_ratio);
 
     printf("Nested k = %u\n", k);
-    printf("C_nrom: G = %e, V1 = %e, V2 = %e\n", C_norm_G, C_norm_V1, C_norm_V2); 
-    printf("L2_nrom: G = %e, V1 = %e, V2 = %e\n", L2_norm_G, L2_norm_V1, L2_norm_V2);
-    printf("W1_nrom: G = %e, V1 = %e, V2 = %e\n", W1_norm_G, W1_norm_V1, W1_norm_V2);
+    printf("C_norm%u G = %e V1 = %e V2 = %e\n", k, C_norm_G, C_norm_V1, C_norm_V2); 
+    printf("L2_norm%u G = %e V1 = %e V2 = %e\n", k, L2_norm_G, L2_norm_V1, L2_norm_V2);
+    printf("W1_norm%u G = %e V1 = %e V2 = %e\n", k, W1_norm_G, W1_norm_V1, W1_norm_V2);
     return 0;
 }
 
