@@ -6,12 +6,12 @@ static inline double eq_eps = 1e-12;
 
 inline double u1 (double t, double x, double y)
 {
-  return sin (2 * M_PI * x) * sin (2 * M_PI * y) * exp (t);
+  return sin (3 * M_PI * x) * sin (2 * M_PI * y) * exp (t);
 }
 
 inline double u2 (double t, double x, double y)
 {
-  return sin (2 * M_PI * x) * sin (2 * M_PI * y) * exp (-t);
+  return sin (3 * M_PI * x) * sin (2 * M_PI * y) * exp (-t);
 }
 
 inline double rho (double t, double x, double y)
@@ -45,22 +45,22 @@ inline double dg_dy (double /*t*/, double /*x*/, double y)
 
 inline double du1_dx (double t, double x, double y)
 {
-  return 2 * M_PI * cos (2 * M_PI * x) * sin (2 * M_PI * y) * exp (t);
+  return 3 * M_PI * cos (3 * M_PI * x) * sin (2 * M_PI * y) * exp (t);
 }
 
 inline double du1_dy (double t, double x, double y)
 {
-  return sin (2 * M_PI * x) * 2 * M_PI * cos (2 * M_PI * y) * exp (t);
+  return sin (3 * M_PI * x) * 2 * M_PI * cos (2 * M_PI * y) * exp (t);
 }
 
 inline double du2_dx (double t, double x, double y)
 {
-  return 2 * M_PI * cos (2 * M_PI * x) * sin (2 * M_PI * y) * exp (-t);
+  return 3 * M_PI * cos (3 * M_PI * x) * sin (2 * M_PI * y) * exp (-t);
 }
 
 inline double du2_dy (double t, double x, double y)
 {
-  return sin (2 * M_PI * x) * 2 * M_PI * cos (2 * M_PI * y) * exp (-t);
+  return sin (3 * M_PI * x) * 2 * M_PI * cos (2 * M_PI * y) * exp (-t);
 }
 
 inline double du1_dt (double t, double x, double y)
@@ -103,7 +103,7 @@ inline double dp_drho (double t, double x, double y, double pp)
 
 inline double ddu1_dxdx (double t, double x, double y)
 {
-  return -4 * M_PI * M_PI * u1 (t, x, y);
+  return -9 * M_PI * M_PI * u1 (t, x, y);
 }
 
 inline double ddu1_dydy (double t, double x, double y)
@@ -113,7 +113,7 @@ inline double ddu1_dydy (double t, double x, double y)
 
 inline double ddu2_dxdy (double t, double x, double y)
 {
-  return 4 * M_PI * M_PI * cos (2 * M_PI * x) * cos (2 * M_PI * y) * exp (-t);
+  return 6 * M_PI * M_PI * cos (3 * M_PI * x) * cos (2 * M_PI * y) * exp (-t);
 }
 
 inline double du2u2_dy (double t, double x, double y)
@@ -133,12 +133,12 @@ inline double ddu2_dydy (double t, double x, double y)
 
 inline double ddu2_dxdx (double t, double x, double y)
 {
-  return -4 * M_PI * M_PI * u2 (t, x, y);
+  return -9 * M_PI * M_PI * u2 (t, x, y);
 }
 
 inline double ddu1_dxdy (double t, double x, double y)
 {
-  return 4 * M_PI * M_PI * cos (2 * M_PI * x) * cos (2 * M_PI * y) * exp (t);
+  return 6 * M_PI * M_PI * cos (3 * M_PI * x) * cos (2 * M_PI * y) * exp (t);
 }
 
 inline double Func_0 (double t, double x, double y)

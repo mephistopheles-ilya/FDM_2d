@@ -549,7 +549,9 @@ public:
       double hy = 0;
       double ht = 0;
       parser.get ("hx", hx);
+      hx /= 3;
       parser.get ("hy", hy);
+      hy /= 3;
       parser.get ("ht", ht);
       hx /= nested_ratio;
       hy /= nested_ratio;
@@ -559,9 +561,10 @@ public:
       Nt = 1./ht;
 
       grid.set_N (Nx, Ny);
+      grid.set_h (hx, hy, ht);
+      grid.consctruct_ij_to_n_elements_mapping ();
       grid.count_number_of_elements ();
       grid.check_ij_to_n_elememts_mapping ();
-      grid.set_h (hx, hy, ht);
 
       maxit = 0;
       parser.get ("maxit", maxit);
