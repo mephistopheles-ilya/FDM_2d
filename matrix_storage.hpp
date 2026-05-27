@@ -549,15 +549,13 @@ public:
       double hy = 0;
       double ht = 0;
       parser.get ("hx", hx);
-      hx /= 3;
       parser.get ("hy", hy);
-      hy /= 3;
       parser.get ("ht", ht);
       hx /= nested_ratio;
       hy /= nested_ratio;
       ht /= nested_ratio;
-      unsigned int Nx = 1./hx;
-      unsigned int Ny = 1./hy;
+      unsigned int Nx = 3./hx;
+      unsigned int Ny = 2./hy;
       Nt = 1./ht;
 
       grid.set_N (Nx, Ny);

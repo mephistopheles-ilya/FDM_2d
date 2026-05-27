@@ -63,15 +63,15 @@ public:
 
   void consctruct_ij_to_n_elements_mapping ()
     {
-      border1x = 1./3. / hx;
-      assert (fabs (border1x * hx - 1./3.) < 1e-16);
-      border2x = 2./3. / hx;
-      assert (fabs (border2x * hx - 2./3.) < 1e-16);
-      border1y = 1./2. / hy;
-      assert (fabs (border1y * hy - 1./2.) < 1e-16);
+      border1x = std::ceil(1. / hx);
+      assert (fabs (border1x * hx - 1.) < 1e-16);
+      border2x = std::ceil(2. / hx);
+      assert (fabs (border2x * hx - 2.) < 1e-16);
+      border1y = std::ceil(1. / hy);
+      assert (fabs (border1y * hy - 1.) < 1e-16);
 
-      assert (fabs (Nx * hx - 1) < 1e-16);
-      assert (fabs (Ny * hy - 1) < 1e-16);
+      assert (fabs (Nx * hx - 3) < 1e-16);
+      assert (fabs (Ny * hy - 2) < 1e-16);
 
       for (unsigned int i = border1x; i <= border2x; ++i)
         {
